@@ -15,16 +15,16 @@ pip install -r requirements.txt
 ```
 
 ## Quick Start (what to run)
-- Main application (plate management): `python src/app/gestionnaire_de_plaques_fast.py`
-- Plate plan generation: `python src/plans/generer_plan_plaque_sequentielle_femelle.py`
-- Plan verification and reports: `python src/plans/verifier_plan_sequentielle_femelle.py`
+- Main application (plate management): `python src/app/plates_manager.py`
+- Plate plan generation: `python src/plate_layout/generate_sequential_female_plate_layout.py`
+- Plan verification and reports: `python src/plate_layout/verify_sequential_female_plate_layout.py`
 - Nextcloud QR generation (popup/env auth): `python src/nextcloud_qr/automat_link.py`
 
 ## Main Scripts
-- `src/app/gestionnaire_de_plaques_fast.py`: main plate management app.
-- `src/plans/generer_plan_plaque_sequentielle_femelle.py`: generates plate Excel files.
-- `src/plans/verifier_plan_sequentielle_femelle.py`: verification and distribution reports.
-- `src/traitement_excel/*.py`: batch plate-file edits and Word printing.
+- `src/app/plates_manager.py`: main plate management app.
+- `src/plate_layout/generate_sequential_female_plate_layout.py`: generates plate Excel files.
+- `src/plate_layout/verify_sequential_female_plate_layout.py`: verification and distribution reports.
+- `src/excel_processing/*.py`: batch plate-file edits and Word printing.
 - `src/nextcloud_qr/*.py`: link/QR generation and Nextcloud automation.
 
 ## Configuration
