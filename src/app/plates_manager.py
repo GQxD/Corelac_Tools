@@ -1,5 +1,5 @@
 ﻿"""
-Interface graphique de gestion des plaques CORELAC - VERSION OPTIMISÃ‰E
+Interface graphique de gestion des plaques CORELAC - VERSION OPTIMISE
 - Cache SQLite pour chargement rapide
 - Synchronisation automatique Excel <-> SQLite
 """
