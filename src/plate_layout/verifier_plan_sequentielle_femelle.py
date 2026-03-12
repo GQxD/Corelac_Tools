@@ -1,10 +1,10 @@
-﻿"""
-Verifplan_femelles_groupees.py - VÃ‰RIFICATION AVEC REGROUPEMENT PAR FEMELLE
+"""
+Verifplan_femelles_groupees.py - VÉRIFICATION AVEC REGROUPEMENT PAR FEMELLE
 
 But :
-- VÃ©rifier la rÃ©partition correcte des 300 croisements
-- VÃ©rifier le regroupement par femelle (croisements BÃ—B + LÃ—B adjacents)
-- Chaque croisement : 16 Å“ufs â†’ 4 plaques (8 Ã  5Â°C + 8 Ã  9Â°C)
+- Vérifier la répartition correcte des 300 croisements
+- Vérifier le regroupement par femelle (croisements B×B + L×B adjacents)
+- Chaque croisement : 16 œufs → 4 plaques (8 à 5°C + 8 à 9°C)
 - 200 plaques totales
 - Analyse du regroupement des femelles par plaque
 - Lecture directe depuis les fichiers Excel (pas de JSON requis)
@@ -19,15 +19,12 @@ from collections import defaultdict
 import openpyxl
 
 # ---------------- CONFIG ----------------
-# CSV source attendu (fichier matrice des croisements, extension .csv)
-input_csv = r"A_REMPLACER_PAR_CHEMIN_FICHIER"
-# Dossier contenant les fichiers plaques à vérifier (Plaque_001.xlsx ... Plaque_200.xlsx)
-plaques_dir = r"A_REMPLACER_PAR_CHEMIN_DOSSIER"
-# Dossier de sortie pour les rapports CSV/PNG de vérification
-output_dir = plaques_dir  # Les rapports seront dans le mÃªme dossier
+input_csv = r"C:\IE\Etudes\ET_Corégone\ET_Corélac\CORELAC_300_plaques_Aléa\12_grilles_5x5_CORELAC_LB-MATRICE.csv"
+plaques_dir = r"C:\IE\Etudes\ET_Corélac\CORELAC_300_plaques_24_femelles_groupées"
+output_dir = plaques_dir  # Les rapports seront dans le même dossier
 
 if not os.path.exists(plaques_dir):
-    print(f"âŒ ERREUR : Dossier non trouvÃ© : {plaques_dir}")
+    print(f"❌ ERREUR : Dossier non trouvé : {plaques_dir}")
     exit(1)
 
 # Configuration
@@ -37,16 +34,16 @@ colonnes = [1, 2, 3, 4, 5, 6]
 capacity_per_plaque = 24
 
 print("="*70)
-print("ðŸ” VÃ‰RIFICATION DES PLAQUES - REGROUPEMENT PAR FEMELLE")
+print("🔍 VÉRIFICATION DES PLAQUES - REGROUPEMENT PAR FEMELLE")
 print("="*70)
 print(f"Configuration:")
-print(f"  â€¢ Nombre de plaques attendu: {nb_plaques_total}")
-print(f"  â€¢ Positions par plaque: {capacity_per_plaque}")
-print(f"  â€¢ Dossier: {plaques_dir}")
+print(f"  • Nombre de plaques attendu: {nb_plaques_total}")
+print(f"  • Positions par plaque: {capacity_per_plaque}")
+print(f"  • Dossier: {plaques_dir}")
 print("="*70 + "\n")
 
 # --- LECTURE DU CSV SOURCE ---
-print("ðŸ“– Lecture du fichier CSV source...")
+print("📖 Lecture du fichier CSV source...")
 groupes = []
 groupes_noms = []
 
@@ -84,27 +81,27 @@ try:
                 i += 1
 
 except FileNotFoundError:
-    print(f"âŒ ERREUR : Fichier non trouvÃ© : {input_csv}")
+    print(f"❌ ERREUR : Fichier non trouvé : {input_csv}")
     exit(1)
 
 total_croisements = sum(len(g) for g in groupes)
-print(f"âœ… {len(groupes)} groupes extraits")
-print(f"âœ… {total_croisements} croisements au total")
+print(f"✅ {len(groupes)} groupes extraits")
+print(f"✅ {total_croisements} croisements au total")
 
 all_croisements = [croi for groupe in groupes for croi in groupe]
 
 # --- LECTURE DES PLAQUES EXCEL ---
-print("\nðŸ“‚ Lecture des plaques Excel...")
+print("\n📂 Lecture des plaques Excel...")
 
 plaques_data = {}
 excel_files = [f for f in os.listdir(plaques_dir) if f.startswith("Plaque_") and f.endswith(".xlsx")]
 
 if not excel_files:
-    print(f"âŒ ERREUR : Aucun fichier Excel trouvÃ© dans {plaques_dir}")
+    print(f"❌ ERREUR : Aucun fichier Excel trouvé dans {plaques_dir}")
     exit(1)
 
-print(f"  ðŸ“Š {len(excel_files)} fichiers Excel trouvÃ©s")
-print(f"  â³ Lecture en cours...")
+print(f"  📊 {len(excel_files)} fichiers Excel trouvés")
+print(f"  ⏳ Lecture en cours...")
 
 for idx, excel_file in enumerate(sorted(excel_files), 1):
     if idx % 20 == 0:
@@ -114,10 +111,10 @@ for idx, excel_file in enumerate(sorted(excel_files), 1):
     file_path = os.path.join(plaques_dir, excel_file)
     
     try:
-        # Lire la feuille "Infos" pour la tempÃ©rature
+        # Lire la feuille "Infos" pour la température
         wb = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
         
-        # Lire la tempÃ©rature depuis la feuille Infos
+        # Lire la température depuis la feuille Infos
         info_sheet = wb["Infos"]
         temp = None
         for row in info_sheet.iter_rows(min_row=1, max_row=5, values_only=True):
@@ -129,7 +126,7 @@ for idx, excel_file in enumerate(sorted(excel_files), 1):
                     temp = 9
                 break
         
-        # Si pas trouvÃ© dans Infos, dÃ©duire du numÃ©ro de plaque
+        # Si pas trouvé dans Infos, déduire du numéro de plaque
         if temp is None:
             plaque_num = int(plaque_name.split("_")[1])
             temp = 5 if plaque_num <= 100 else 9
@@ -154,29 +151,29 @@ for idx, excel_file in enumerate(sorted(excel_files), 1):
         wb.close()
         
     except Exception as e:
-        print(f"  âš ï¸ Erreur lors de la lecture de {excel_file}: {e}")
+        print(f"  ⚠️ Erreur lors de la lecture de {excel_file}: {e}")
         continue
 
-print(f"  âœ… {len(plaques_data)} plaques chargÃ©es avec succÃ¨s\n")
+print(f"  ✅ {len(plaques_data)} plaques chargées avec succès\n")
 
 if len(plaques_data) == 0:
-    print("âŒ ERREUR : Aucune plaque n'a pu Ãªtre lue")
+    print("❌ ERREUR : Aucune plaque n'a pu être lue")
     exit(1)
 
-# --- VÃ‰RIFICATIONS GLOBALES ---
-print("ðŸ” VÃ©rifications globales...")
+# --- VÉRIFICATIONS GLOBALES ---
+print("🔍 Vérifications globales...")
 
 # 1. Nombre de plaques
 if len(plaques_data) != nb_plaques_total:
-    print(f"  âš ï¸ {len(plaques_data)} plaques trouvÃ©es (attendu: {nb_plaques_total})")
+    print(f"  ⚠️ {len(plaques_data)} plaques trouvées (attendu: {nb_plaques_total})")
 else:
-    print(f"  âœ… {nb_plaques_total} plaques prÃ©sentes")
+    print(f"  ✅ {nb_plaques_total} plaques présentes")
 
 # 2. Compter les occurrences par croisement
-occ_by_crois = {c: {"5Â°C": 0, "9Â°C": 0, "Total": 0} for c in all_croisements}
+occ_by_crois = {c: {"5°C": 0, "9°C": 0, "Total": 0} for c in all_croisements}
 
 for plaque_name, data in plaques_data.items():
-    temp_key = "5Â°C" if data['temp'] == 5 else "9Â°C"
+    temp_key = "5°C" if data['temp'] == 5 else "9°C"
     for croi in data['wells'].values():
         if croi in occ_by_crois:
             occ_by_crois[croi][temp_key] += 1
@@ -184,31 +181,31 @@ for plaque_name, data in plaques_data.items():
         else:
             # Croisement non attendu
             if croi not in occ_by_crois:
-                occ_by_crois[croi] = {"5Â°C": 0, "9Â°C": 0, "Total": 0}
+                occ_by_crois[croi] = {"5°C": 0, "9°C": 0, "Total": 0}
             occ_by_crois[croi][temp_key] += 1
             occ_by_crois[croi]["Total"] += 1
 
-# 3. VÃ©rifier les anomalies de rÃ©partition
+# 3. Vérifier les anomalies de répartition
 problemes_repartition = []
 for croi, counts in occ_by_crois.items():
-    if counts["5Â°C"] != 8 or counts["9Â°C"] != 8 or counts["Total"] != 16:
+    if counts["5°C"] != 8 or counts["9°C"] != 8 or counts["Total"] != 16:
         problemes_repartition.append({
             'croisement': croi,
-            '5C': counts["5Â°C"],
-            '9C': counts["9Â°C"],
+            '5C': counts["5°C"],
+            '9C': counts["9°C"],
             'total': counts["Total"]
         })
 
 if problemes_repartition:
-    print(f"  âŒ {len(problemes_repartition)} croisements avec anomalie de rÃ©partition")
+    print(f"  ❌ {len(problemes_repartition)} croisements avec anomalie de répartition")
     for p in problemes_repartition[:5]:  # Afficher les 5 premiers
-        print(f"     â€¢ {p['croisement']}: {p['5C']}+{p['9C']}={p['total']} (attendu: 8+8=16)")
+        print(f"     • {p['croisement']}: {p['5C']}+{p['9C']}={p['total']} (attendu: 8+8=16)")
     if len(problemes_repartition) > 5:
         print(f"     ... et {len(problemes_repartition) - 5} autres")
 else:
-    print(f"  âœ… Tous les croisements correctement rÃ©partis (8+8=16 Å“ufs)")
+    print(f"  ✅ Tous les croisements correctement répartis (8+8=16 œufs)")
 
-# 4. VÃ©rifier le remplissage des plaques
+# 4. Vérifier le remplissage des plaques
 plaques_incompletes = []
 for plaque_name, data in plaques_data.items():
     if len(data['wells']) != capacity_per_plaque:
@@ -218,20 +215,20 @@ for plaque_name, data in plaques_data.items():
         })
 
 if plaques_incompletes:
-    print(f"  âš ï¸ {len(plaques_incompletes)} plaques incomplÃ¨tes")
+    print(f"  ⚠️ {len(plaques_incompletes)} plaques incomplètes")
     for p in plaques_incompletes[:5]:
-        print(f"     â€¢ {p['plaque']}: {p['positions']}/24 positions")
+        print(f"     • {p['plaque']}: {p['positions']}/24 positions")
     if len(plaques_incompletes) > 5:
         print(f"     ... et {len(plaques_incompletes) - 5} autres")
 else:
-    print(f"  âœ… Toutes les plaques complÃ¨tes (24/24 positions)")
+    print(f"  ✅ Toutes les plaques complètes (24/24 positions)")
 
 # --- ANALYSE DU REGROUPEMENT PAR FEMELLE ---
-print("\nðŸ‘©â€ðŸ”¬ Analyse du regroupement par femelle...")
+print("\n👩‍🔬 Analyse du regroupement par femelle...")
 
 # Extraire les femelles de chaque croisement
 def extract_female(croisement):
-    """Extrait la femelle d'un croisement (aprÃ¨s le 'x')"""
+    """Extrait la femelle d'un croisement (après le 'x')"""
     if 'x' in croisement:
         return croisement.split('x')[1]
     return None
@@ -258,10 +255,10 @@ for plaque_name, data in plaques_data.items():
 femelles_par_plaque = [info['nb_femelles'] for info in plaques_regroupement.values()]
 avg_femelles = sum(femelles_par_plaque) / len(femelles_par_plaque) if femelles_par_plaque else 0
 
-print(f"  ðŸ“Š Nombre moyen de femelles par plaque: {avg_femelles:.2f}")
-print(f"  ðŸ“Š Min: {min(femelles_par_plaque)} femelles, Max: {max(femelles_par_plaque)} femelles")
+print(f"  📊 Nombre moyen de femelles par plaque: {avg_femelles:.2f}")
+print(f"  📊 Min: {min(femelles_par_plaque)} femelles, Max: {max(femelles_par_plaque)} femelles")
 
-# VÃ©rifier l'adjacence des colonnes pour une mÃªme femelle
+# Vérifier l'adjacence des colonnes pour une même femelle
 adjacence_ok = 0
 adjacence_problemes = []
 
@@ -271,7 +268,7 @@ for plaque_name, info in plaques_regroupement.items():
         # Extraire les colonnes
         cols = sorted(set([int(pos[1]) for pos in positions]))
         
-        # VÃ©rifier si les colonnes sont adjacentes
+        # Vérifier si les colonnes sont adjacentes
         if len(cols) > 1:
             is_adjacent = all(cols[i+1] - cols[i] == 1 for i in range(len(cols)-1))
             if is_adjacent:
@@ -285,79 +282,79 @@ for plaque_name, info in plaques_regroupement.items():
                 })
 
 if adjacence_problemes:
-    print(f"  âš ï¸ {len(adjacence_problemes)} cas oÃ¹ les colonnes d'une femelle ne sont pas adjacentes")
+    print(f"  ⚠️ {len(adjacence_problemes)} cas où les colonnes d'une femelle ne sont pas adjacentes")
     for p in adjacence_problemes[:3]:
-        print(f"     â€¢ {p['plaque']} - {p['femelle']}: colonnes {p['colonnes']}")
+        print(f"     • {p['plaque']} - {p['femelle']}: colonnes {p['colonnes']}")
     if len(adjacence_problemes) > 3:
         print(f"     ... et {len(adjacence_problemes) - 3} autres")
 else:
-    print(f"  âœ… Toutes les femelles avec plusieurs colonnes sont bien regroupÃ©es en colonnes adjacentes")
+    print(f"  ✅ Toutes les femelles avec plusieurs colonnes sont bien regroupées en colonnes adjacentes")
 
 # --- ANALYSE PAR TYPE DE CROISEMENT ---
-print("\nðŸ§¬ Analyse par type de croisement...")
+print("\n🧬 Analyse par type de croisement...")
 
 types_croisements = {
-    'BÃ—B': [],
-    'LÃ—L': [],
-    'LÃ—B': [],
-    'BÃ—L': []
+    'B×B': [],
+    'L×L': [],
+    'L×B': [],
+    'B×L': []
 }
 
 for croi in all_croisements:
     if 'B_M' in croi and 'B_F' in croi:
-        types_croisements['BÃ—B'].append(croi)
+        types_croisements['B×B'].append(croi)
     elif 'L_M' in croi and 'L_F' in croi:
-        types_croisements['LÃ—L'].append(croi)
+        types_croisements['L×L'].append(croi)
     elif 'L_M' in croi and 'B_F' in croi:
-        types_croisements['LÃ—B'].append(croi)
+        types_croisements['L×B'].append(croi)
     elif 'B_M' in croi and 'L_F' in croi:
-        types_croisements['BÃ—L'].append(croi)
+        types_croisements['B×L'].append(croi)
 
 for type_nom, croisements_type in types_croisements.items():
-    print(f"  â€¢ {type_nom}: {len(croisements_type)} croisements")
+    print(f"  • {type_nom}: {len(croisements_type)} croisements")
 
 # --- RAPPORTS CSV ---
-print("\nðŸ“‹ GÃ©nÃ©ration des rapports...")
+print("\n📋 Génération des rapports...")
 
 # 1. Rapport croisements
 rapport_crois_file = os.path.join(output_dir, "rapport_croisements_femelles.csv")
 with open(rapport_crois_file, "w", newline='', encoding='utf-8') as csvf:
     writer = csv.writer(csvf)
-    writer.writerow(["Croisement", "Femelle", "Type", "Occ_5Â°C", "Occ_9Â°C", "Total", "Attendu", "Statut"])
+    writer.writerow(["Croisement", "Femelle", "Type", "Occ_5°C", "Occ_9°C", "Total", "Attendu", "Statut"])
     
     for c in sorted(occ_by_crois.keys()):
         femelle = extract_female(c)
-        # DÃ©terminer le type
+        # Déterminer le type
         if 'B_M' in c and 'B_F' in c:
-            type_croi = "BÃ—B"
+            type_croi = "B×B"
         elif 'L_M' in c and 'L_F' in c:
-            type_croi = "LÃ—L"
+            type_croi = "L×L"
         elif 'L_M' in c and 'B_F' in c:
-            type_croi = "LÃ—B"
+            type_croi = "L×B"
         elif 'B_M' in c and 'L_F' in c:
-            type_croi = "BÃ—L"
+            type_croi = "B×L"
         else:
             type_croi = "Inconnu"
         
-        a = occ_by_crois[c]["5Â°C"]
-        b = occ_by_crois[c]["9Â°C"]
+        a = occ_by_crois[c]["5°C"]
+        b = occ_by_crois[c]["9°C"]
         total = occ_by_crois[c]["Total"]
         status = "OK" if (a == 8 and b == 8 and total == 16) else "ERREUR"
         writer.writerow([c, femelle, type_croi, a, b, total, 16, status])
 
-print(f"  âœ… {rapport_crois_file}")
+print(f"  ✅ {rapport_crois_file}")
 
 # 2. Rapport plaques avec analyse femelles
 rapport_plaques_file = os.path.join(output_dir, "rapport_plaques_femelles.csv")
 with open(rapport_plaques_file, "w", newline='', encoding='utf-8') as csvf:
     writer = csv.writer(csvf)
-    writer.writerow(["Plaque", "TempÃ©rature", "Nb_positions", "Nb_femelles", "Femelles_prÃ©sentes", "Statut"])
+    writer.writerow(["Plaque", "Température", "Nb_positions", "Nb_femelles", "Femelles_présentes", "Statut"])
     
     for plaque_name in sorted(plaques_data.keys(), key=lambda x: int(x.split("_")[1])):
         data = plaques_data[plaque_name]
         info_regr = plaques_regroupement[plaque_name]
         
-        temp = f"{data['temp']}Â°C"
+        temp = f"{data['temp']}°C"
         nb_pos = len(data['wells'])
         nb_fem = info_regr['nb_femelles']
         femelles_list = ', '.join(sorted(info_regr['femelles'].keys()))
@@ -365,9 +362,9 @@ with open(rapport_plaques_file, "w", newline='', encoding='utf-8') as csvf:
         status = "OK" if nb_pos == capacity_per_plaque else "ERREUR"
         writer.writerow([plaque_name, temp, nb_pos, nb_fem, femelles_list, status])
 
-print(f"  âœ… {rapport_plaques_file}")
+print(f"  ✅ {rapport_plaques_file}")
 
-# 3. Rapport dÃ©taillÃ© par femelle
+# 3. Rapport détaillé par femelle
 rapport_femelles_file = os.path.join(output_dir, "rapport_par_femelle.csv")
 with open(rapport_femelles_file, "w", newline='', encoding='utf-8') as csvf:
     writer = csv.writer(csvf)
@@ -401,10 +398,10 @@ with open(rapport_femelles_file, "w", newline='', encoding='utf-8') as csvf:
         
         writer.writerow([femelle, nb_croi, nb_pl_5c, nb_pl_9c, plaques_5c_list, plaques_9c_list])
 
-print(f"  âœ… {rapport_femelles_file}")
+print(f"  ✅ {rapport_femelles_file}")
 
 # --- HEATMAP ---
-print("\nðŸ“Š GÃ©nÃ©ration de la heatmap...")
+print("\n📊 Génération de la heatmap...")
 matrix = pd.DataFrame(0, index=sorted(all_croisements), columns=range(1, nb_plaques_total + 1))
 
 for plaque_name, data in plaques_data.items():
@@ -418,45 +415,45 @@ sns.heatmap(matrix, cmap="YlGnBu", cbar=True, linewidths=0, ax=ax,
             cbar_kws={'label': 'Nombre d\'occurrences'})
 
 ax.axvline(x=100, color='red', linewidth=3, linestyle='--', alpha=0.8)
-ax.text(50, -15, '5Â°C', ha='center', fontsize=16, fontweight='bold', color='green')
-ax.text(150, -15, '9Â°C', ha='center', fontsize=16, fontweight='bold', color='blue')
+ax.text(50, -15, '5°C', ha='center', fontsize=16, fontweight='bold', color='green')
+ax.text(150, -15, '9°C', ha='center', fontsize=16, fontweight='bold', color='blue')
 
-ax.set_title(f"RÃ©partition avec regroupement par femelle - {total_croisements} croisements sur {len(plaques_data)} plaques",
+ax.set_title(f"Répartition avec regroupement par femelle - {total_croisements} croisements sur {len(plaques_data)} plaques",
              fontsize=18, pad=25, fontweight='bold')
-ax.set_xlabel("NumÃ©ro de plaque", fontsize=14, fontweight='bold')
+ax.set_xlabel("Numéro de plaque", fontsize=14, fontweight='bold')
 ax.set_ylabel("Croisements", fontsize=14, fontweight='bold')
 
 plt.tight_layout()
 heatmap_path = os.path.join(output_dir, "heatmap_repartition_femelles.png")
 plt.savefig(heatmap_path, dpi=300, bbox_inches='tight')
 plt.close()
-print(f"  âœ… {heatmap_path}")
+print(f"  ✅ {heatmap_path}")
 
 # --- STATISTIQUES FINALES ---
 print("\n" + "="*70)
-print("ðŸ“ˆ STATISTIQUES FINALES")
+print("📈 STATISTIQUES FINALES")
 print("="*70)
-print(f"Groupes traitÃ©s: {len(groupes)}")
-print(f"Croisements traitÃ©s: {total_croisements}")
-print(f"Plaques vÃ©rifiÃ©es: {len(plaques_data)}")
-print(f"  â†’ 5Â°C: {sum(1 for p in plaques_data.values() if p['temp'] == 5)}")
-print(f"  â†’ 9Â°C: {sum(1 for p in plaques_data.values() if p['temp'] == 9)}")
+print(f"Groupes traités: {len(groupes)}")
+print(f"Croisements traités: {total_croisements}")
+print(f"Plaques vérifiées: {len(plaques_data)}")
+print(f"  → 5°C: {sum(1 for p in plaques_data.values() if p['temp'] == 5)}")
+print(f"  → 9°C: {sum(1 for p in plaques_data.values() if p['temp'] == 9)}")
 print(f"\nRegroupement par femelle:")
-print(f"  â†’ Moyenne: {avg_femelles:.2f} femelles/plaque")
-print(f"  â†’ {adjacence_ok} cas de regroupement correct en colonnes adjacentes")
-print(f"\nÅ’ufs par croisement: 16 (8 par tempÃ©rature)")
-print(f"Total Å“ufs rÃ©partis: {total_croisements * 16}")
+print(f"  → Moyenne: {avg_femelles:.2f} femelles/plaque")
+print(f"  → {adjacence_ok} cas de regroupement correct en colonnes adjacentes")
+print(f"\nŒufs par croisement: 16 (8 par température)")
+print(f"Total œufs répartis: {total_croisements * 16}")
 
 if not problemes_repartition and not plaques_incompletes:
     print("\n" + "="*70)
-    print("âœ… VALIDATION RÃ‰USSIE ! Toutes les vÃ©rifications sont OK")
+    print("✅ VALIDATION RÉUSSIE ! Toutes les vérifications sont OK")
     print("="*70)
 else:
     print("\n" + "="*70)
-    print("âš ï¸ ATTENTION : Des problÃ¨mes ont Ã©tÃ© dÃ©tectÃ©s")
-    print(f"  â€¢ Croisements avec anomalie: {len(problemes_repartition)}")
-    print(f"  â€¢ Plaques incomplÃ¨tes: {len(plaques_incompletes)}")
+    print("⚠️ ATTENTION : Des problèmes ont été détectés")
+    print(f"  • Croisements avec anomalie: {len(problemes_repartition)}")
+    print(f"  • Plaques incomplètes: {len(plaques_incompletes)}")
     print("="*70)
 
-print(f"\nðŸ“‚ Tous les rapports sont dans : {output_dir}")
+print(f"\n📂 Tous les rapports sont dans : {output_dir}")
 print("="*70)

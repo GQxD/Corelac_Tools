@@ -20,6 +20,15 @@ pip install -r requirements.txt
 - Plan verification and reports: `python src/plate_layout/verify_sequential_female_plate_layout.py`
 - Nextcloud QR generation (popup/env auth): `python src/nextcloud_qr/automat_link.py`
 
+## Preview
+![Plates manager UI](assets/images/Ui_Plates_manager.png)
+
+## Project Layout
+- `assets/icons/`: application icons (`.ico`, `.png`).
+- `dist/`: built Windows executable (if produced).
+- `examples/`: sample Excel plates.
+- `src/`: application source code.
+
 ## Main Scripts
 - `src/app/plates_manager.py`: main plate management app.
 - `src/plate_layout/generate_sequential_female_plate_layout.py`: generates plate Excel files.

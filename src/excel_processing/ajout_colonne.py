@@ -1,4 +1,4 @@
-﻿import os
+import os
 import re
 from openpyxl import load_workbook
 from openpyxl.styles import Font, Border, Alignment, PatternFill
@@ -7,46 +7,46 @@ from copy import copy
 def ajouter_colonnes_excel(dossier_source, dossier_destination=None, nb_dates_photo=5):
     """
     Ajoute les colonnes 'Tray ID' et plusieurs colonnes 'Date photo X' 
-    Ã  la feuille 'Suivi' de tous les fichiers Excel dans un dossier.
+    à la feuille 'Suivi' de tous les fichiers Excel dans un dossier.
     
     Args:
         dossier_source: Chemin du dossier contenant les fichiers Excel
-        dossier_destination: Chemin du dossier pour les fichiers modifiÃ©s 
-                            (optionnel, par dÃ©faut crÃ©e un sous-dossier 'modifiÃ©s')
-        nb_dates_photo: Nombre de colonnes pour les dates de photographie (dÃ©faut: 5)
+        dossier_destination: Chemin du dossier pour les fichiers modifiés 
+                            (optionnel, par défaut crée un sous-dossier 'modifiés')
+        nb_dates_photo: Nombre de colonnes pour les dates de photographie (défaut: 5)
     """
-    # VÃ©rifier que le dossier source existe
+    # Vérifier que le dossier source existe
     if not os.path.exists(dossier_source):
-        print(f"âŒ ERREUR: Le dossier '{dossier_source}' n'existe pas!")
+        print(f"❌ ERREUR: Le dossier '{dossier_source}' n'existe pas!")
         return
     
     # Lister tous les fichiers du dossier pour diagnostic
-    print(f"ðŸ“ Contenu du dossier:")
+    print(f"📁 Contenu du dossier:")
     tous_fichiers = os.listdir(dossier_source)
     
-    # Filtrer uniquement les fichiers Plaque_001 Ã  Plaque_200
+    # Filtrer uniquement les fichiers Plaque_001 à Plaque_200
     fichiers_excel = []
     for f in tous_fichiers:
         if re.match(r'Plaque_\d{3}\.(xlsx|xls)$', f, re.IGNORECASE):
             fichiers_excel.append(f)
     
-    fichiers_excel.sort()  # Trier par ordre numÃ©rique
+    fichiers_excel.sort()  # Trier par ordre numérique
     
     print(f"   Total de fichiers: {len(tous_fichiers)}")
-    print(f"   Fichiers Plaque_XXX trouvÃ©s: {len(fichiers_excel)}")
+    print(f"   Fichiers Plaque_XXX trouvés: {len(fichiers_excel)}")
     
     if len(fichiers_excel) == 0:
-        print("\nâš ï¸  Aucun fichier Plaque_XXX.xlsx trouvÃ©!")
-        print("   Le script cherche les fichiers nommÃ©s: Plaque_001.xlsx, Plaque_002.xlsx, etc.")
-        print("   VÃ©rifiez que:")
-        print("   - Les fichiers sont bien nommÃ©s avec le format Plaque_XXX.xlsx")
-        print("   - Les numÃ©ros ont 3 chiffres (001, 002, etc.)")
+        print("\n⚠️  Aucun fichier Plaque_XXX.xlsx trouvé!")
+        print("   Le script cherche les fichiers nommés: Plaque_001.xlsx, Plaque_002.xlsx, etc.")
+        print("   Vérifiez que:")
+        print("   - Les fichiers sont bien nommés avec le format Plaque_XXX.xlsx")
+        print("   - Les numéros ont 3 chiffres (001, 002, etc.)")
         print("\n   Exemples de fichiers dans le dossier:")
         for f in tous_fichiers[:10]:
             print(f"   - {f}")
         return
     
-    print(f"\n   Fichiers Plaque Ã  traiter:")
+    print(f"\n   Fichiers Plaque à traiter:")
     for f in fichiers_excel[:5]:
         print(f"   - {f}")
     if len(fichiers_excel) > 5:
@@ -54,14 +54,14 @@ def ajouter_colonnes_excel(dossier_source, dossier_destination=None, nb_dates_ph
     print(f"\n   Configuration: Tray ID + {nb_dates_photo} colonnes de dates photo")
     print()
     
-    # CrÃ©er le dossier de destination s'il n'existe pas
+    # Créer le dossier de destination s'il n'existe pas
     if dossier_destination is None:
-        dossier_destination = os.path.join(dossier_source, "modifiÃ©s")
+        dossier_destination = os.path.join(dossier_source, "modifiés")
     
     if not os.path.exists(dossier_destination):
         os.makedirs(dossier_destination)
     
-    # Compter les fichiers traitÃ©s
+    # Compter les fichiers traités
     fichiers_traites = 0
     fichiers_erreur = 0
     
@@ -78,20 +78,20 @@ def ajouter_colonnes_excel(dossier_source, dossier_destination=None, nb_dates_ph
             # Afficher les feuilles disponibles
             print(f"   Feuilles disponibles: {', '.join(wb.sheetnames)}")
             
-            # VÃ©rifier si la feuille 'Suivi' existe
+            # Vérifier si la feuille 'Suivi' existe
             if 'Suivi' not in wb.sheetnames:
-                print(f"  âš ï¸  Feuille 'Suivi' non trouvÃ©e dans {fichier}")
+                print(f"  ⚠️  Feuille 'Suivi' non trouvée dans {fichier}")
                 print(f"      Utilisez une de ces feuilles: {', '.join(wb.sheetnames)}")
                 fichiers_erreur += 1
                 continue
             
-            # SÃ©lectionner la feuille 'Suivi'
+            # Sélectionner la feuille 'Suivi'
             ws = wb['Suivi']
             
-            # Trouver la derniÃ¨re colonne utilisÃ©e
+            # Trouver la dernière colonne utilisée
             derniere_colonne = ws.max_column
             
-            # Copier le style de la derniÃ¨re colonne existante (en-tÃªte)
+            # Copier le style de la dernière colonne existante (en-tête)
             cellule_reference = ws.cell(row=1, column=derniere_colonne)
             
             # Ajouter la colonne 'Tray ID'
@@ -127,40 +127,40 @@ def ajouter_colonnes_excel(dossier_source, dossier_destination=None, nb_dates_ph
             for col in range(nouvelle_col, nouvelle_col + nb_dates_photo + 1):
                 ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = 15
             
-            # Sauvegarder le fichier modifiÃ©
+            # Sauvegarder le fichier modifié
             chemin_destination = os.path.join(dossier_destination, fichier)
             wb.save(chemin_destination)
             
-            print(f"  âœ“ {fichier} traitÃ© avec succÃ¨s")
+            print(f"  ✓ {fichier} traité avec succès")
             fichiers_traites += 1
             
         except Exception as e:
-            print(f"  âœ— Erreur avec {fichier}: {str(e)}")
+            print(f"  ✗ Erreur avec {fichier}: {str(e)}")
             fichiers_erreur += 1
     
-    # RÃ©sumÃ©
+    # Résumé
     print("\n" + "="*50)
-    print(f"Traitement terminÃ© !")
-    print(f"âœ“ Fichiers traitÃ©s: {fichiers_traites}")
-    print(f"âœ— Fichiers en erreur: {fichiers_erreur}")
-    print(f"ðŸ“ Fichiers sauvegardÃ©s dans: {dossier_destination}")
+    print(f"Traitement terminé !")
+    print(f"✓ Fichiers traités: {fichiers_traites}")
+    print(f"✗ Fichiers en erreur: {fichiers_erreur}")
+    print(f"📁 Fichiers sauvegardés dans: {dossier_destination}")
     print("="*50)
 
 
 if __name__ == "__main__":
-    # Dossier source attendu: contient des fichiers Excel de plaques (Plaque_XXX.xlsx)
-    dossier_source = r"A_REMPLACER_PAR_CHEMIN_DOSSIER"
+    # MODIFIEZ CE CHEMIN AVEC LE DOSSIER CONTENANT VOS FICHIERS
+    dossier_source = r"C:\IE\Etudes\ET_Corélac\CORELAC_300_plaques_24_femelles_groupées"
     
-    # MODIFIEZ LE NOMBRE DE COLONNES POUR LES DATES PHOTO (dÃ©faut: 5)
+    # MODIFIEZ LE NOMBRE DE COLONNES POUR LES DATES PHOTO (défaut: 5)
     nb_dates_photo = 50  # Changez ce nombre selon vos besoins
     
-    # Optionnel: dossier de sortie (sinon un sous-dossier local sera créé automatiquement)
-    # dossier_destination = r"A_REMPLACER_PAR_CHEMIN_DOSSIER"
+    # Optionnel: spécifier un dossier de destination différent
+    # dossier_destination = r"C:\chemin\vers\destination"
     
-    print("DÃ©but du traitement des fichiers Excel...")
+    print("Début du traitement des fichiers Excel...")
     print(f"Dossier source: {dossier_source}\n")
     
     ajouter_colonnes_excel(dossier_source, nb_dates_photo=nb_dates_photo)
     
-    print("\nAppuyez sur EntrÃ©e pour fermer...")
+    print("\nAppuyez sur Entrée pour fermer...")
     input()

@@ -1,4 +1,4 @@
-﻿import os
+import os
 import re
 from openpyxl import load_workbook
 from openpyxl.styles import Font, Border, Alignment, PatternFill
@@ -7,23 +7,23 @@ from copy import copy
 def modifier_et_ajouter_colonnes_plaques(dossier_source, dossier_destination=None, nb_dates_photo=50):
     """
     Modifie les croisements ET ajoute les colonnes 'Tray ID' et 'Date photo X' 
-    dans les fichiers Plaque_001 Ã  Plaque_200.
+    dans les fichiers Plaque_001 à Plaque_200.
     
-    Modifications appliquÃ©es:
-    1. Remplacement des femelles B_F11 Ã  B_F15 selon nouvelle matrice (en gras)
-    2. Interversion B_M1 â†” B_M7 pour croisements BOURGETÃ—BOURGET (en italique)
+    Modifications appliquées:
+    1. Remplacement des femelles B_F11 à B_F15 selon nouvelle matrice (en gras)
+    2. Interversion B_M1 ↔ B_M7 pour croisements BOURGET×BOURGET (en italique)
     3. Ajout colonne 'Tray ID' dans feuille 'Suivi'
     4. Ajout de X colonnes 'Date photo X' dans feuille 'Suivi'
     
     Args:
         dossier_source: Chemin du dossier contenant les fichiers Excel
-        dossier_destination: Chemin du dossier pour les fichiers modifiÃ©s
-        nb_dates_photo: Nombre de colonnes pour les dates de photographie (dÃ©faut: 50)
+        dossier_destination: Chemin du dossier pour les fichiers modifiés
+        nb_dates_photo: Nombre de colonnes pour les dates de photographie (défaut: 50)
     """
     
-    # Dictionnaire de remplacement pour les femelles B_F11 Ã  B_F15
+    # Dictionnaire de remplacement pour les femelles B_F11 à B_F15
     remplacements_femelles = {
-        # Bourget Ã— Bourget - MÃ¢les M11, M12, M13
+        # Bourget × Bourget - Mâles M11, M12, M13
         'B_M11xB_F11': 'B_M11xB_F1', 'B_M11xB_F12': 'B_M11xB_F2', 'B_M11xB_F13': 'B_M11xB_F3',
         'B_M11xB_F14': 'B_M11xB_F4', 'B_M11xB_F15': 'B_M11xB_F5',
         
@@ -33,14 +33,14 @@ def modifier_et_ajouter_colonnes_plaques(dossier_source, dossier_destination=Non
         'B_M13xB_F11': 'B_M13xB_F1', 'B_M13xB_F12': 'B_M13xB_F2', 'B_M13xB_F13': 'B_M13xB_F3',
         'B_M13xB_F14': 'B_M13xB_F4', 'B_M13xB_F15': 'B_M13xB_F5',
         
-        # Bourget Ã— Bourget - MÃ¢les M14, M15
+        # Bourget × Bourget - Mâles M14, M15
         'B_M14xB_F11': 'B_M14xB_F6', 'B_M14xB_F12': 'B_M14xB_F7', 'B_M14xB_F13': 'B_M14xB_F8',
         'B_M14xB_F14': 'B_M14xB_F9', 'B_M14xB_F15': 'B_M14xB_F10',
         
         'B_M15xB_F11': 'B_M15xB_F6', 'B_M15xB_F12': 'B_M15xB_F7', 'B_M15xB_F13': 'B_M15xB_F8',
         'B_M15xB_F14': 'B_M15xB_F9', 'B_M15xB_F15': 'B_M15xB_F10',
         
-        # LÃ©man Ã— Bourget - MÃ¢les M11, M12, M13
+        # Léman × Bourget - Mâles M11, M12, M13
         'L_M11xB_F11': 'L_M11xB_F1', 'L_M11xB_F12': 'L_M11xB_F2', 'L_M11xB_F13': 'L_M11xB_F3',
         'L_M11xB_F14': 'L_M11xB_F4', 'L_M11xB_F15': 'L_M11xB_F5',
         
@@ -50,7 +50,7 @@ def modifier_et_ajouter_colonnes_plaques(dossier_source, dossier_destination=Non
         'L_M13xB_F11': 'L_M13xB_F1', 'L_M13xB_F12': 'L_M13xB_F2', 'L_M13xB_F13': 'L_M13xB_F3',
         'L_M13xB_F14': 'L_M13xB_F4', 'L_M13xB_F15': 'L_M13xB_F5',
         
-        # LÃ©man Ã— Bourget - MÃ¢les M14, M15
+        # Léman × Bourget - Mâles M14, M15
         'L_M14xB_F11': 'L_M14xB_F6', 'L_M14xB_F12': 'L_M14xB_F7', 'L_M14xB_F13': 'L_M14xB_F8',
         'L_M14xB_F14': 'L_M14xB_F9', 'L_M14xB_F15': 'L_M14xB_F10',
         
@@ -58,13 +58,13 @@ def modifier_et_ajouter_colonnes_plaques(dossier_source, dossier_destination=Non
         'L_M15xB_F14': 'L_M15xB_F9', 'L_M15xB_F15': 'L_M15xB_F10',
     }
     
-    # VÃ©rifier que le dossier source existe
+    # Vérifier que le dossier source existe
     if not os.path.exists(dossier_source):
-        print(f"âŒ ERREUR: Le dossier '{dossier_source}' n'existe pas!")
+        print(f"❌ ERREUR: Le dossier '{dossier_source}' n'existe pas!")
         return
     
     # Lister tous les fichiers du dossier
-    print(f"ðŸ“ Contenu du dossier:")
+    print(f"📁 Contenu du dossier:")
     tous_fichiers = os.listdir(dossier_source)
     
     # Filtrer uniquement les fichiers Plaque_XXX
@@ -76,17 +76,17 @@ def modifier_et_ajouter_colonnes_plaques(dossier_source, dossier_destination=Non
     fichiers_excel.sort()
     
     print(f"   Total de fichiers: {len(tous_fichiers)}")
-    print(f"   Fichiers Plaque_XXX trouvÃ©s: {len(fichiers_excel)}")
+    print(f"   Fichiers Plaque_XXX trouvés: {len(fichiers_excel)}")
     
     if len(fichiers_excel) == 0:
-        print("\nâš ï¸  Aucun fichier Plaque_XXX.xlsx trouvÃ©!")
-        print("   Le script cherche les fichiers nommÃ©s: Plaque_001.xlsx, Plaque_002.xlsx, etc.")
-        print("   VÃ©rifiez que:")
-        print("   - Les fichiers sont bien nommÃ©s avec le format Plaque_XXX.xlsx")
-        print("   - Les numÃ©ros ont 3 chiffres (001, 002, etc.)")
+        print("\n⚠️  Aucun fichier Plaque_XXX.xlsx trouvé!")
+        print("   Le script cherche les fichiers nommés: Plaque_001.xlsx, Plaque_002.xlsx, etc.")
+        print("   Vérifiez que:")
+        print("   - Les fichiers sont bien nommés avec le format Plaque_XXX.xlsx")
+        print("   - Les numéros ont 3 chiffres (001, 002, etc.)")
         return
     
-    print(f"\n   Fichiers Ã  traiter:")
+    print(f"\n   Fichiers à traiter:")
     for f in fichiers_excel[:5]:
         print(f"   - {f}")
     if len(fichiers_excel) > 5:
@@ -95,16 +95,16 @@ def modifier_et_ajouter_colonnes_plaques(dossier_source, dossier_destination=Non
     print(f"\n   Configuration: Tray ID + {nb_dates_photo} colonnes de dates photo")
     print()
     
-    # CrÃ©er le dossier de destination
+    # Créer le dossier de destination
     if dossier_destination is None:
-        dossier_destination = os.path.join(dossier_source, "plaques_complÃ¨tes")
+        dossier_destination = os.path.join(dossier_source, "plaques_complètes")
     
     if not os.path.exists(dossier_destination):
         os.makedirs(dossier_destination)
     
-    print("ðŸ”§ Modifications Ã  appliquer:")
-    print("  1. Remplacement femelles B_F11-F15 â†’ nouvelles femelles (GRAS)")
-    print("  2. Interversion B_M1 â†” B_M7 pour BOURGETÃ—BOURGET (ITALIQUE)")
+    print("🔧 Modifications à appliquer:")
+    print("  1. Remplacement femelles B_F11-F15 → nouvelles femelles (GRAS)")
+    print("  2. Interversion B_M1 ↔ B_M7 pour BOURGET×BOURGET (ITALIQUE)")
     print(f"  3. Ajout colonne 'Tray ID' dans feuille 'Suivi'")
     print(f"  4. Ajout de {nb_dates_photo} colonnes 'Date photo X' dans feuille 'Suivi'")
     print()
@@ -145,7 +145,7 @@ def modifier_et_ajouter_colonnes_plaques(dossier_source, dossier_destination=Non
                                 appliquer_gras = True
                                 modifs_femelles_plaque += 1
                             
-                            # Modification 2: Interversion B_M1 â†” B_M7 (uniquement BOURGETÃ—BOURGET)
+                            # Modification 2: Interversion B_M1 ↔ B_M7 (uniquement BOURGET×BOURGET)
                             if nouvelle_valeur.startswith('B_M1x') and 'B_F' in nouvelle_valeur:
                                 nouvelle_valeur = nouvelle_valeur.replace('B_M1x', 'B_M7x')
                                 appliquer_italique = True
@@ -159,7 +159,7 @@ def modifier_et_ajouter_colonnes_plaques(dossier_source, dossier_destination=Non
                             if nouvelle_valeur != valeur_originale or appliquer_gras or appliquer_italique:
                                 cell.value = nouvelle_valeur
                                 
-                                # Copier le style existant ou crÃ©er un nouveau
+                                # Copier le style existant ou créer un nouveau
                                 if cell.font:
                                     nouvelle_font = copy(cell.font)
                                 else:
@@ -189,10 +189,10 @@ def modifier_et_ajouter_colonnes_plaques(dossier_source, dossier_destination=Non
             if 'Suivi' in wb.sheetnames:
                 ws_suivi = wb['Suivi']
                 
-                # Trouver la derniÃ¨re colonne utilisÃ©e
+                # Trouver la dernière colonne utilisée
                 derniere_colonne = ws_suivi.max_column
                 
-                # Copier le style de la derniÃ¨re colonne existante (en-tÃªte)
+                # Copier le style de la dernière colonne existante (en-tête)
                 cellule_reference = ws_suivi.cell(row=1, column=derniere_colonne)
                 
                 # Ajouter la colonne 'Tray ID'
@@ -229,56 +229,56 @@ def modifier_et_ajouter_colonnes_plaques(dossier_source, dossier_destination=Non
                     ws_suivi.column_dimensions[ws_suivi.cell(row=1, column=col).column_letter].width = 15
                 
                 fichiers_avec_suivi += 1
-                print(f"  âœ“ Feuille 'Suivi': Tray ID + {nb_dates_photo} colonnes ajoutÃ©es")
+                print(f"  ✓ Feuille 'Suivi': Tray ID + {nb_dates_photo} colonnes ajoutées")
             else:
-                print(f"  âš ï¸  Feuille 'Suivi' non trouvÃ©e (colonnes non ajoutÃ©es)")
+                print(f"  ⚠️  Feuille 'Suivi' non trouvée (colonnes non ajoutées)")
             
-            # Sauvegarder le fichier modifiÃ©
+            # Sauvegarder le fichier modifié
             chemin_destination = os.path.join(dossier_destination, fichier)
             wb.save(chemin_destination)
             
-            print(f"  âœ“ ModifiÃ©: {modifs_femelles_plaque} remplacements femelles, {interversions_plaque} interversions")
+            print(f"  ✓ Modifié: {modifs_femelles_plaque} remplacements femelles, {interversions_plaque} interversions")
             fichiers_traites += 1
             total_modifs_femelles += modifs_femelles_plaque
             total_interversions += interversions_plaque
             
         except Exception as e:
-            print(f"  âœ— Erreur avec {fichier}: {str(e)}")
+            print(f"  ✗ Erreur avec {fichier}: {str(e)}")
             fichiers_erreur += 1
     
-    # RÃ©sumÃ©
+    # Résumé
     print("\n" + "="*70)
-    print(f"Traitement terminÃ© !")
-    print(f"âœ“ Fichiers traitÃ©s avec succÃ¨s: {fichiers_traites}/{len(fichiers_excel)}")
-    print(f"âœ— Fichiers en erreur: {fichiers_erreur}")
+    print(f"Traitement terminé !")
+    print(f"✓ Fichiers traités avec succès: {fichiers_traites}/{len(fichiers_excel)}")
+    print(f"✗ Fichiers en erreur: {fichiers_erreur}")
     print()
-    print(f"ðŸ“Š Modifications des croisements:")
+    print(f"📊 Modifications des croisements:")
     print(f"   - Total remplacements femelles (GRAS): {total_modifs_femelles}")
-    print(f"   - Total interversions B_M1â†”B_M7 (ITALIQUE): {total_interversions}")
+    print(f"   - Total interversions B_M1↔B_M7 (ITALIQUE): {total_interversions}")
     print()
-    print(f"ðŸ“‹ Ajout de colonnes:")
-    print(f"   - Fichiers avec feuille 'Suivi' modifiÃ©e: {fichiers_avec_suivi}")
-    print(f"   - Colonnes ajoutÃ©es par fichier: Tray ID + {nb_dates_photo} dates photo")
+    print(f"📋 Ajout de colonnes:")
+    print(f"   - Fichiers avec feuille 'Suivi' modifiée: {fichiers_avec_suivi}")
+    print(f"   - Colonnes ajoutées par fichier: Tray ID + {nb_dates_photo} dates photo")
     print()
-    print(f"ðŸ“ Fichiers sauvegardÃ©s dans: {dossier_destination}")
+    print(f"📁 Fichiers sauvegardés dans: {dossier_destination}")
     print("="*70)
 
 
 if __name__ == "__main__":
-    # Dossier source attendu: contient des fichiers Excel de plaques (Plaque_XXX.xlsx)
-    dossier_source = r"A_REMPLACER_PAR_CHEMIN_DOSSIER"
+    # MODIFIEZ CE CHEMIN AVEC LE DOSSIER CONTENANT VOS FICHIERS
+    dossier_source = r"C:\IE\Etudes\ET_Corélac\CORELAC_300_plaques_24_femelles_groupées"
     
-    # MODIFIEZ LE NOMBRE DE COLONNES POUR LES DATES PHOTO (dÃ©faut: 50)
+    # MODIFIEZ LE NOMBRE DE COLONNES POUR LES DATES PHOTO (défaut: 50)
     nb_dates_photo = 50
     
-    # Optionnel: dossier de sortie (sinon un sous-dossier local sera créé automatiquement)
-    # dossier_destination = r"A_REMPLACER_PAR_CHEMIN_DOSSIER"
+    # Optionnel: spécifier un dossier de destination différent
+    # dossier_destination = r"C:\chemin\vers\destination"
     
-    print("ðŸš€ DÃ©but du traitement complet des plaques...")
-    print(f"ðŸ“ Dossier source: {dossier_source}")
-    print(f"ðŸ“¸ Nombre de colonnes photos: {nb_dates_photo}\n")
+    print("🚀 Début du traitement complet des plaques...")
+    print(f"📁 Dossier source: {dossier_source}")
+    print(f"📸 Nombre de colonnes photos: {nb_dates_photo}\n")
     
     modifier_et_ajouter_colonnes_plaques(dossier_source, nb_dates_photo=nb_dates_photo)
     
-    print("\nAppuyez sur EntrÃ©e pour fermer...")
+    print("\nAppuyez sur Entrée pour fermer...")
     input()

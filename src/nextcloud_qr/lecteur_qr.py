@@ -1,7 +1,7 @@
-﻿import os
+import os
 
-# Dossier local contenant les fichiers Excel de plaques (Plaque_XXX.xlsx)
-dossier = r"A_REMPLACER_PAR_CHEMIN_DOSSIER"
+# Dossier des plaques
+dossier = r"C:\IE\Etudes\ET_Corélac\CORELAC_300_plaques_24_femelles_groupées\plaques_complètes(dernière version)"
 
 # Scanner QR code ou coller le texte
 nom_plaque = input("Collez le texte du QR code (ex: Plaque_001.xlsx) : ").strip()
@@ -11,5 +11,4 @@ if os.path.exists(chemin_fichier):
     os.startfile(chemin_fichier)  # ouvre directement avec Excel
     print(f"Ouverture de {chemin_fichier}")
 else:
-    print("âŒ Fichier introuvable ! V?rifie le nom et le dossier.")
-
+    print("❌ Fichier introuvable ! Vérifie le nom et le dossier.")

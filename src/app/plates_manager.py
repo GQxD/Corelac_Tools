@@ -1,5 +1,6 @@
-﻿"""
-Interface graphique de gestion des plaques CORELAC - VERSION OPTIMISE
+"""
+Interface graphique de gestion des plaques CORELAC - VERSION OPTIMISEE
+
 - Cache SQLite pour chargement rapide
 - Synchronisation automatique Excel <-> SQLite
 """
@@ -16,20 +17,20 @@ from openpyxl.styles import PatternFill
 import shutil
 
 # ============ CONFIGURATION ============
-DOSSIER_PLAQUES = r"A_REMPLACER_PAR_CHEMIN_DOSSIER"
-DOSSIER_MODIFIEES = os.path.join(os.path.dirname(DOSSIER_PLAQUES), "plaques_modifiees")
-os.makedirs(DOSSIER_MODIFIEES, exist_ok=True)
+PLATES_FOLDER = r"C:\IE\Etudes\ET_Corélac\CORELAC_300_plaques_24_femelles_groupées\plaques_modifiees"
+MODIFIED_FOLDER = os.path.join(os.path.dirname(PLATES_FOLDER), "plaques_modifiees")
+os.makedirs(MODIFIED_FOLDER, exist_ok=True)
 
-# Base de donnÃ©es cache
-DB_PATH = os.path.join(DOSSIER_MODIFIEES, "corelac_cache.db")
+# Base de données cache
+DB_PATH = os.path.join(MODIFIED_FOLDER, "corelac_cache.db")
 
 # Dates de fertilisation
 DATE_BOURGET = "19/12/2025"
 DATE_LEMAN = "22/12/2025"
 
 # Grille
-LIGNES = ['A', 'B', 'C', 'D']
-COLONNES = [1, 2, 3, 4, 5, 6]
+ROWS = ['A', 'B', 'C', 'D']
+COLUMNS = [1, 2, 3, 4, 5, 6]
 
 # Couleurs
 COLOR_ALIVE = '#00FF00'
@@ -41,15 +42,15 @@ COLOR_HOVER = '#FFFF99'
 COLOR_HATCHED = '#CCFF00'
 COLOR_HATCHED_TODAY = "#05F06F"
 COLOR_HATCHED_14DAYS = '#A9A9A9'
-COLOR_OUT_OF_STUDIES = '#505050'  # Gris foncÃ© pour "Out of Studies"
+COLOR_OUT_OF_STUDIES = '#505050'  # Gris foncé pour "Out of Studies"
 
-# Pattern pour dÃ©tecter les croisements L_M x L_F avec mÃ¢le 11-15
+# Pattern pour détecter les croisements L_M x L_F avec mâle 11-15
 MALE_11_15_PATTERN = re.compile(r'L_M\s*(1[1-5])\s*x\s*L_F', re.IGNORECASE)
 
-# Auges selon tempÃ©rature
-AUGES_5C = ['A1', 'A2']
-AUGES_9C = ['A3', 'A4']
-AUTO_AUGE_LOGIC = True
+# Auges selon température
+TANKS_5C = ['A1', 'A2']
+TANKS_9C = ['A3', 'A4']
+AUTO_TANK_LOGIC = True
 
 
 # ============ CACHE SQLITE ============
@@ -62,7 +63,7 @@ class PlateCache:
         self._init_db()
 
     def _init_db(self):
-        """Initialise la base de donnÃ©es"""
+        """Initialise la base de données"""
         self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
 
@@ -100,14 +101,14 @@ class PlateCache:
         self.conn.commit()
 
     def is_plate_cached(self, plate_num):
-        """VÃ©rifie si une plaque est en cache"""
+        """Vérifie si une plaque est en cache"""
         cursor = self.conn.execute(
             "SELECT 1 FROM plates WHERE plate_num = ?", (plate_num,)
         )
         return cursor.fetchone() is not None
 
     def get_plate_data(self, plate_num):
-        """RÃ©cupÃ¨re les donnÃ©es d'une plaque depuis le cache"""
+        """Récupère les données d'une plaque depuis le cache"""
         # Info plaque
         cursor = self.conn.execute(
             "SELECT * FROM plates WHERE plate_num = ?", (plate_num,)
@@ -171,8 +172,8 @@ class PlateCache:
         self.conn.commit()
 
     def update_cell(self, plate_num, position, **kwargs):
-        """Met Ã  jour une cellule spÃ©cifique"""
-        # Construire la requÃªte UPDATE dynamiquement
+        """Met à jour une cellule spécifique"""
+        # Construire la requête UPDATE dynamiquement
         updates = []
         values = []
 
@@ -206,7 +207,7 @@ class PlateCache:
             self.conn.commit()
 
     def get_ignored_conflicts(self, plate_num):
-        """RÃ©cupÃ¨re les positions des conflits ignorÃ©s pour une plaque"""
+        """Récupère les positions des conflits ignorés pour une plaque"""
         cursor = self.conn.execute("""
             SELECT position FROM ignored_photo_conflicts
             WHERE plate_num = ?
@@ -214,7 +215,7 @@ class PlateCache:
         return {row['position'] for row in cursor.fetchall()}
 
     def add_ignored_conflict(self, plate_num, position):
-        """Ajoute un conflit ignorÃ©"""
+        """Ajoute un conflit ignoré"""
         self.conn.execute("""
             INSERT OR IGNORE INTO ignored_photo_conflicts (plate_num, position)
             VALUES (?, ?)
@@ -222,7 +223,7 @@ class PlateCache:
         self.conn.commit()
 
     def remove_ignored_conflict(self, plate_num, position):
-        """Retire un conflit ignorÃ©"""
+        """Retire un conflit ignoré"""
         self.conn.execute("""
             DELETE FROM ignored_photo_conflicts
             WHERE plate_num = ? AND position = ?
@@ -230,7 +231,7 @@ class PlateCache:
         self.conn.commit()
 
     def get_plates_needing_photos(self):
-        """Retourne les plaques avec des alevins Ã  photographier"""
+        """Retourne les plaques avec des alevins à photographier"""
         today = datetime.now()
         three_days_ago = today.strftime("%d/%m/%Y")
 
@@ -245,7 +246,7 @@ class PlateCache:
         plates_with_photos = []
         for row in cursor.fetchall():
             plate_num = row['plate_num']
-            # VÃ©rifier si au moins une cellule a besoin de photo
+            # Vérifier si au moins une cellule a besoin de photo
             cells_cursor = self.conn.execute("""
                 SELECT position, hatching_date, last_photo_date FROM cells
                 WHERE plate_num = ? AND status != 'Dead' AND hatching_date IS NOT NULL
@@ -259,7 +260,7 @@ class PlateCache:
         return plates_with_photos
 
     def _needs_photo_check(self, hatching_str, last_photo_str, today):
-        """VÃ©rifie si une cellule a besoin de photo"""
+        """Vérifie si une cellule a besoin de photo"""
         if not hatching_str:
             return False
 
@@ -289,24 +290,24 @@ class ExcelSyncer:
         plate_name = f"Plaque_{plate_num:03d}.xlsx"
 
         # Chercher le fichier
-        plate_path = os.path.join(DOSSIER_MODIFIEES, plate_name)
+        plate_path = os.path.join(MODIFIED_FOLDER, plate_name)
         if not os.path.exists(plate_path):
-            plate_path = os.path.join(DOSSIER_PLAQUES, plate_name)
+            plate_path = os.path.join(PLATES_FOLDER, plate_name)
 
         if not os.path.exists(plate_path):
             return False
 
         try:
-            # Charger en mode lecture seule pour plus de rapiditÃ©
+            # Charger en mode lecture seule pour plus de rapidité
             wb = openpyxl.load_workbook(plate_path, read_only=True, data_only=True)
 
             ws_disp = wb["Disposition"]
             ws_suivi = wb["Suivi"]
 
-            # DÃ©tecter type de femelle
+            # Détecter type de femelle
             first_cross = None
-            for row_idx in range(len(LIGNES)):
-                for col_idx in range(len(COLONNES)):
+            for row_idx in range(len(ROWS)):
+                for col_idx in range(len(COLUMNS)):
                     cell_val = ws_disp.cell(row_idx + 2, col_idx + 2).value
                     if cell_val and 'x' in str(cell_val):
                         first_cross = str(cell_val)
@@ -319,7 +320,7 @@ class ExcelSyncer:
                 female_type = "Bourget"
             elif first_cross and 'L_F' in first_cross:
                 fert_date = DATE_LEMAN
-                female_type = "LÃ©man"
+                female_type = "Léman"
             else:
                 fert_date = "Inconnue"
                 female_type = "?"
@@ -327,14 +328,14 @@ class ExcelSyncer:
             # Charger les cellules
             cells_status = {}
 
-            for row_idx, row in enumerate(LIGNES):
-                for col_idx, col in enumerate(COLONNES):
+            for row_idx, row in enumerate(ROWS):
+                for col_idx, col in enumerate(COLUMNS):
                     pos = f"{row}{col}"
 
                     cross = ws_disp.cell(row_idx + 2, col_idx + 2).value
                     cross = str(cross).strip() if cross else ""
 
-                    suivi_row = row_idx * len(COLONNES) + col_idx + 2
+                    suivi_row = row_idx * len(COLUMNS) + col_idx + 2
                     status = ws_suivi.cell(suivi_row, 9).value
                     death_date = ws_suivi.cell(suivi_row, 10).value
                     death_type = ws_suivi.cell(suivi_row, 11).value
@@ -350,7 +351,7 @@ class ExcelSyncer:
                         else:
                             break
 
-                    # Calculer derniÃ¨re date photo
+                    # Calculer dernière date photo
                     last_photo_date_str = ""
                     if photo_dates:
                         valid_dates = []
@@ -396,7 +397,7 @@ class ExcelSyncer:
 
     @staticmethod
     def sync_all_plates(cache: PlateCache, progress_callback=None, complete_callback=None):
-        """Synchronise toutes les plaques en arriÃ¨re-plan"""
+        """Synchronise toutes les plaques en arrière-plan"""
         def worker():
             synced = 0
             for plate_num in range(1, 301):
@@ -411,17 +412,385 @@ class ExcelSyncer:
         return thread
 
 
-# ============ PLATE MANAGER OPTIMISÃ‰ ============
+# ============ COMPLETE CELL EDITOR ============
+class CompleteCellEditor:
+    """Complete cell data editor - Modal dialog"""
+
+    def __init__(self, parent, plate_manager, initial_pos="A1"):
+        self.parent = parent
+        self.pm = plate_manager  # Référence au PlateManagerFast
+        self.current_pos = initial_pos
+        self.original_data = {}  # Pour la fonction Reset
+
+        # Créer le dialogue
+        self.dialog = tk.Toplevel(parent)
+        self.dialog.title(f"Complete Cell Data Editor - {initial_pos}")
+        self.dialog.geometry("550x700")
+        self.dialog.resizable(False, False)
+        self.dialog.transient(parent)
+        self.dialog.grab_set()
+
+        # Centrer
+        self.dialog.update_idletasks()
+        x = (self.dialog.winfo_screenwidth() // 2) - (self.dialog.winfo_width() // 2)
+        y = (self.dialog.winfo_screenheight() // 2) - (self.dialog.winfo_height() // 2)
+        self.dialog.geometry(f"+{x}+{y}")
+
+        # Variables
+        self.position_var = tk.StringVar(value=initial_pos)
+        self.status_var = tk.StringVar(value="Alive")
+        self.death_date_var = tk.StringVar()
+        self.death_type_var = tk.StringVar(value="Dead")
+        self.eyespot_date_var = tk.StringVar()
+        self.hatching_date_var = tk.StringVar()
+
+        # Construire l'interface
+        self._setup_ui()
+
+        # Charger les données initiales
+        self._load_position_data(initial_pos)
+
+        # Raccourcis clavier
+        self.dialog.bind('<Escape>', lambda e: self.dialog.destroy())
+        self.dialog.bind('<Return>', lambda e: self._validate_and_save())
+
+    def _setup_ui(self):
+        """Construit l'interface de l'éditeur"""
+        main_frame = ttk.Frame(self.dialog, padding="10")
+        main_frame.pack(fill=tk.BOTH, expand=True)
+
+        # ===== POSITION SELECTOR =====
+        pos_frame = ttk.LabelFrame(main_frame, text="Cell Position", padding="10")
+        pos_frame.pack(fill=tk.X, pady=(0, 10))
+
+        ttk.Label(pos_frame, text="Position:").pack(side=tk.LEFT, padx=5)
+
+        # Dropdown avec toutes les positions
+        positions = [f"{row}{col}" for row in ROWS for col in COLUMNS]
+        pos_combo = ttk.Combobox(pos_frame, textvariable=self.position_var,
+                                  values=positions, width=8, state='readonly')
+        pos_combo.pack(side=tk.LEFT, padx=5)
+        pos_combo.bind('<<ComboboxSelected>>', lambda e: self._on_position_changed())
+
+        # Boutons de navigation
+        ttk.Button(pos_frame, text="◀", width=3,
+                   command=self._navigate_previous).pack(side=tk.LEFT, padx=2)
+        ttk.Button(pos_frame, text="▶", width=3,
+                   command=self._navigate_next).pack(side=tk.LEFT, padx=2)
+
+        # Label du croisement
+        self.cross_label = tk.Label(pos_frame, text="", font=("Arial", 9), fg="blue")
+        self.cross_label.pack(side=tk.LEFT, padx=10)
+
+        # ===== STATUS =====
+        status_frame = ttk.LabelFrame(main_frame, text="Status", padding="10")
+        status_frame.pack(fill=tk.X, pady=(0, 10))
+
+        ttk.Radiobutton(status_frame, text="Alive", variable=self.status_var,
+                        value="Alive", command=self._on_status_changed).pack(side=tk.LEFT, padx=5)
+        ttk.Radiobutton(status_frame, text="Dead", variable=self.status_var,
+                        value="Dead", command=self._on_status_changed).pack(side=tk.LEFT, padx=5)
+
+        # ===== DEATH DATA =====
+        death_frame = ttk.LabelFrame(main_frame, text="Death Data", padding="10")
+        death_frame.pack(fill=tk.X, pady=(0, 10))
+
+        # Death Date
+        date_frame = ttk.Frame(death_frame)
+        date_frame.pack(fill=tk.X, pady=5)
+        ttk.Label(date_frame, text="Death Date (DD/MM/YYYY):").pack(side=tk.LEFT, padx=5)
+        self.death_date_entry = ttk.Entry(date_frame, textvariable=self.death_date_var, width=15)
+        self.death_date_entry.pack(side=tk.LEFT, padx=5)
+
+        # Death Type
+        type_frame = ttk.Frame(death_frame)
+        type_frame.pack(fill=tk.X, pady=5)
+        ttk.Label(type_frame, text="Death Type:").pack(side=tk.LEFT, padx=5)
+        death_types = ["Dead", "Dead eyed", "Dead larvae", "Runaway", "Out of Studies"]
+        self.death_type_combo = ttk.Combobox(type_frame, textvariable=self.death_type_var,
+                                              values=death_types, width=20, state='readonly')
+        self.death_type_combo.pack(side=tk.LEFT, padx=5)
+
+        # ===== DEVELOPMENT DATES =====
+        dev_frame = ttk.LabelFrame(main_frame, text="Development Dates", padding="10")
+        dev_frame.pack(fill=tk.X, pady=(0, 10))
+
+        # Eyespot Date
+        eye_frame = ttk.Frame(dev_frame)
+        eye_frame.pack(fill=tk.X, pady=5)
+        ttk.Label(eye_frame, text="Eyespot Date:").pack(side=tk.LEFT, padx=5)
+        self.eyespot_entry = ttk.Entry(eye_frame, textvariable=self.eyespot_date_var, width=15)
+        self.eyespot_entry.pack(side=tk.LEFT, padx=5)
+
+        # Hatching Date
+        hatch_frame = ttk.Frame(dev_frame)
+        hatch_frame.pack(fill=tk.X, pady=5)
+        ttk.Label(hatch_frame, text="Hatching Date:").pack(side=tk.LEFT, padx=5)
+        self.hatching_entry = ttk.Entry(hatch_frame, textvariable=self.hatching_date_var, width=15)
+        self.hatching_entry.pack(side=tk.LEFT, padx=5)
+
+        # ===== PHOTO DATES =====
+        photo_frame = ttk.LabelFrame(main_frame, text="Photo Dates (Max 20)", padding="10")
+        photo_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+
+        # Liste des photos avec scrollbar
+        list_frame = ttk.Frame(photo_frame)
+        list_frame.pack(fill=tk.BOTH, expand=True)
+
+        scrollbar = ttk.Scrollbar(list_frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.photo_listbox = tk.Listbox(list_frame, height=8, yscrollcommand=scrollbar.set)
+        self.photo_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.config(command=self.photo_listbox.yview)
+
+        # Boutons pour gérer les photos
+        photo_btn_frame = ttk.Frame(photo_frame)
+        photo_btn_frame.pack(fill=tk.X, pady=(5, 0))
+
+        self.photo_date_var = tk.StringVar(value=datetime.now().strftime("%d/%m/%Y"))
+        ttk.Entry(photo_btn_frame, textvariable=self.photo_date_var, width=12).pack(side=tk.LEFT, padx=5)
+        ttk.Button(photo_btn_frame, text="+ Add", command=self._add_photo_date).pack(side=tk.LEFT, padx=2)
+        ttk.Button(photo_btn_frame, text="- Remove", command=self._remove_photo_date).pack(side=tk.LEFT, padx=2)
+
+        # ===== BUTTONS =====
+        btn_frame = ttk.Frame(main_frame)
+        btn_frame.pack(fill=tk.X, pady=(10, 0))
+
+        ttk.Button(btn_frame, text="Save", command=self._validate_and_save).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="Reset", command=self._reset_form).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="Cancel", command=self.dialog.destroy).pack(side=tk.LEFT, padx=5)
+
+    def _load_position_data(self, pos):
+        """Charge les données pour une position donnée"""
+        if pos not in self.pm.cells_status:
+            return
+
+        data = self.pm.cells_status[pos]
+        self.original_data = dict(data)  # Copie pour reset
+
+        # Mettre à jour le titre
+        self.dialog.title(f"Complete Cell Data Editor - {pos}")
+
+        # Afficher le croisement
+        cross = data.get('cross', '')
+        self.cross_label.config(text=f"Cross: {cross}")
+
+        # Status
+        if data.get('alive', True):
+            self.status_var.set("Alive")
+        else:
+            self.status_var.set("Dead")
+
+        # Death data
+        self.death_date_var.set(data.get('death_date', ''))
+        self.death_type_var.set(data.get('death_type', 'Dead'))
+
+        # Development dates
+        self.eyespot_date_var.set(data.get('eyespot_date', ''))
+        self.hatching_date_var.set(data.get('hatching_date', ''))
+
+        # Photo dates
+        self.photo_listbox.delete(0, tk.END)
+        photo_dates = data.get('photo_dates', [])
+        for i, pd in enumerate(photo_dates):
+            self.photo_listbox.insert(tk.END, f"{i+1}. {pd}")
+
+        # Activer/désactiver les champs selon le statut
+        self._on_status_changed()
+
+    def _on_position_changed(self):
+        """Appelé quand l'utilisateur change de position"""
+        new_pos = self.position_var.get()
+        self._load_position_data(new_pos)
+        self.current_pos = new_pos
+
+    def _navigate_previous(self):
+        """Navigue vers la cellule précédente"""
+        positions = [f"{row}{col}" for row in ROWS for col in COLUMNS]
+        current_idx = positions.index(self.current_pos)
+        if current_idx > 0:
+            new_pos = positions[current_idx - 1]
+            self.position_var.set(new_pos)
+            self._load_position_data(new_pos)
+            self.current_pos = new_pos
+
+    def _navigate_next(self):
+        """Navigue vers la cellule suivante"""
+        positions = [f"{row}{col}" for row in ROWS for col in COLUMNS]
+        current_idx = positions.index(self.current_pos)
+        if current_idx < len(positions) - 1:
+            new_pos = positions[current_idx + 1]
+            self.position_var.set(new_pos)
+            self._load_position_data(new_pos)
+            self.current_pos = new_pos
+
+    def _on_status_changed(self):
+        """Active/désactive les champs selon le statut"""
+        status = self.status_var.get()
+
+        if status == "Alive":
+            # Désactiver les champs de mort
+            self.death_date_entry.config(state=tk.DISABLED)
+            self.death_type_combo.config(state=tk.DISABLED)
+        else:
+            # Activer les champs de mort
+            self.death_date_entry.config(state=tk.NORMAL)
+            self.death_type_combo.config(state='readonly')
+
+    def _add_photo_date(self):
+        """Ajoute une date de photo"""
+        if self.photo_listbox.size() >= 20:
+            messagebox.showwarning("Limite atteinte", "Maximum 20 dates de photos par cellule")
+            return
+
+        photo_date = self.photo_date_var.get().strip()
+        if not photo_date:
+            return
+
+        # Valider le format
+        try:
+            datetime.strptime(photo_date, "%d/%m/%Y")
+        except ValueError:
+            messagebox.showerror("Erreur", "Format de date invalide.\nUtilisez DD/MM/YYYY (ex: 15/03/2026)")
+            return
+
+        # Vérifier si déjà présente
+        current_dates = [self.photo_listbox.get(i).split(". ", 1)[1] for i in range(self.photo_listbox.size())]
+        if photo_date in current_dates:
+            messagebox.showinfo("Info", "Cette date est déjà dans la liste")
+            return
+
+        # Ajouter
+        idx = self.photo_listbox.size() + 1
+        self.photo_listbox.insert(tk.END, f"{idx}. {photo_date}")
+
+    def _remove_photo_date(self):
+        """Supprime la date de photo sélectionnée"""
+        selection = self.photo_listbox.curselection()
+        if not selection:
+            messagebox.showinfo("Info", "Sélectionnez une date à supprimer")
+            return
+
+        self.photo_listbox.delete(selection[0])
+
+        # Re-numéroter
+        dates = [self.photo_listbox.get(i).split(". ", 1)[1] for i in range(self.photo_listbox.size())]
+        self.photo_listbox.delete(0, tk.END)
+        for i, date in enumerate(dates):
+            self.photo_listbox.insert(tk.END, f"{i+1}. {date}")
+
+    def _validate_and_save(self):
+        """Valide et sauvegarde les modifications"""
+        # Validation des dates
+        dates_to_validate = [
+            (self.death_date_var.get(), "Death Date"),
+            (self.eyespot_date_var.get(), "Eyespot Date"),
+            (self.hatching_date_var.get(), "Hatching Date")
+        ]
+
+        for date_str, field_name in dates_to_validate:
+            if date_str.strip():
+                try:
+                    datetime.strptime(date_str, "%d/%m/%Y")
+                except ValueError:
+                    messagebox.showerror("Erreur",
+                        f"Format de date invalide pour {field_name}.\nUtilisez DD/MM/YYYY (ex: 15/03/2026)")
+                    return
+
+        # Validation logique
+        status = self.status_var.get()
+        if status == "Dead":
+            if not self.death_date_var.get().strip():
+                messagebox.showerror("Erreur", "La date de mort est obligatoire pour un statut 'Dead'")
+                return
+
+        # Sauvegarder
+        pos = self.current_pos
+        data = self.pm.cells_status[pos]
+
+        # Status
+        if status == "Alive":
+            data['alive'] = True
+            data['death_date'] = ''
+            data['death_type'] = ''
+        else:  # Dead
+            data['alive'] = False
+            data['death_date'] = self.death_date_var.get().strip()
+            data['death_type'] = self.death_type_var.get()
+
+        # Development dates
+        data['eyespot_date'] = self.eyespot_date_var.get().strip()
+        data['hatching_date'] = self.hatching_date_var.get().strip()
+
+        # Photo dates
+        photo_dates = [self.photo_listbox.get(i).split(". ", 1)[1] for i in range(self.photo_listbox.size())]
+        data['photo_dates'] = photo_dates
+        data['last_photo_date'] = photo_dates[-1] if photo_dates else ''
+
+        # Mettre à jour le cache
+        self.pm.cache.update_cell(
+            self.pm.current_plate_number, pos,
+            alive=data['alive'],
+            death_date=data['death_date'],
+            death_type=data['death_type'],
+            eyespot_date=data['eyespot_date'],
+            hatching_date=data['hatching_date'],
+            photo_dates=photo_dates,
+            last_photo_date=data['last_photo_date']
+        )
+
+        # Rafraîchir l'UI
+        self.pm._refresh_button(pos)
+        self.pm.update_status()
+        self.pm.check_photo_death_conflicts()
+        self.pm.update_photo_tracking()
+        self.pm.mark_unsaved()
+
+        # Sauvegarder en arrière-plan
+        self.pm._save_excel_background()
+
+        messagebox.showinfo("Succès", f"Données sauvegardées pour {pos}")
+
+        # Charger les nouvelles données pour continuer l'édition
+        self._load_position_data(pos)
+
+    def _reset_form(self):
+        """Réinitialise le formulaire aux valeurs originales"""
+        self._load_position_data(self.current_pos)
+
+
+# ============ PLATE MANAGER OPTIMISÉ ============
 class PlateManagerFast:
     def __init__(self, root):
         self.root = root
-        self.root.title("ðŸ§¬ Gestion Plaques CORELAC [FAST]")
+        self.root.title("🧬 Gestion Plaques CORELAC [FAST]")
         self.root.geometry("1000x850")
+
+        # Définir l'icône de la fenêtre (pour la barre des tâches Windows)
+        try:
+            import sys
+            if getattr(sys, 'frozen', False):
+                # Si exécuté depuis un .exe compilé, utiliser l'icône de l'exécutable
+                self.root.iconbitmap(default=sys.executable)
+            else:
+                # En développement, essayer de charger l'icône depuis le fichier
+                icon_path = os.path.join(
+                    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                    "assets",
+                    "icons",
+                    "corelac_bimp_hq.ico",
+                )
+                if os.path.exists(icon_path):
+                    self.root.iconbitmap(default=icon_path)
+        except Exception as e:
+            # Si l'icône ne peut pas être chargée, continuer sans
+            pass
 
         # Cache SQLite
         self.cache = PlateCache()
 
-        # Variables d'Ã©tat
+        # Variables d'état
         self.current_plate = None
         self.current_plate_number = None
         self.wb = None  # Workbook Excel (pour sauvegarde)
@@ -433,7 +802,7 @@ class PlateManagerFast:
         self.photo_mode = False
         self.blink_cells = set()
         self.ignored_photo_conflicts = set()
-        self.has_unsaved_changes = False  # Tracker les modifications non sauvegardÃ©es
+        self.has_unsaved_changes = False  # Tracker les modifications non sauvegardées
 
         # Variables pour le type de femelle
         self.current_female_type = ""
@@ -442,39 +811,42 @@ class PlateManagerFast:
         # Construire l'interface
         self.setup_ui()
 
-        # Synchroniser le cache en arriÃ¨re-plan
+        # Synchroniser le cache en arrière-plan
         self.start_background_sync()
 
     def start_background_sync(self):
-        """Lance la synchronisation du cache en arriÃ¨re-plan"""
+        """Lance la synchronisation du cache en arrière-plan"""
         def on_progress(plate_num):
-            # Mise Ã  jour discrÃ¨te
+            # Mise à jour discrète
             pass
 
         def on_complete(synced):
             self.root.after(0, lambda: self.label_cache_status.config(
-                text=f"âœ… Cache: {synced} plaques", fg="green"
+                text=f"✅ Cache: {synced} plaques", fg="green"
             ))
 
-        self.label_cache_status.config(text="ðŸ”„ Sync cache...", fg="orange")
+        self.label_cache_status.config(text="🔄 Sync cache...", fg="orange")
         ExcelSyncer.sync_all_plates(self.cache, on_progress, on_complete)
 
     def setup_ui(self):
         """Construit l'interface"""
-        # Frame supÃ©rieure
+        # Setup menu bar
+        self._setup_menu_bar()
+
+        # Frame supérieure
         frame_top = ttk.Frame(self.root, padding="5")
         frame_top.pack(fill=tk.X)
 
-        ttk.Label(frame_top, text="Plaque NÂ°:").pack(side=tk.LEFT, padx=5)
+        ttk.Label(frame_top, text="Plaque N°:").pack(side=tk.LEFT, padx=5)
         self.entry_plate = ttk.Entry(frame_top, width=10, font=("Arial", 12))
         self.entry_plate.pack(side=tk.LEFT, padx=5)
         self.entry_plate.bind('<Return>', lambda e: self.load_plate())
 
         ttk.Button(frame_top, text="Charger", command=self.load_plate).pack(side=tk.LEFT, padx=5)
-        ttk.Button(frame_top, text="â—€", command=self.load_previous_plate, width=3).pack(side=tk.LEFT, padx=2)
-        ttk.Button(frame_top, text="â–¶", command=self.load_next_plate, width=3).pack(side=tk.LEFT, padx=2)
+        ttk.Button(frame_top, text="◀", command=self.load_previous_plate, width=3).pack(side=tk.LEFT, padx=2)
+        ttk.Button(frame_top, text="▶", command=self.load_next_plate, width=3).pack(side=tk.LEFT, padx=2)
 
-        # Indicateur modifications non sauvegardÃ©es
+        # Indicateur modifications non sauvegardées
         self.label_unsaved = tk.Label(frame_top, text="", font=("Arial", 12, "bold"))
         self.label_unsaved.pack(side=tk.RIGHT, padx=5)
 
@@ -483,7 +855,7 @@ class PlateManagerFast:
         self.label_cache_status.pack(side=tk.RIGHT, padx=10)
 
         # Bouton resync
-        ttk.Button(frame_top, text="ðŸ”„ Resync", command=self.resync_current_plate).pack(side=tk.RIGHT, padx=5)
+        ttk.Button(frame_top, text="🔄 Resync", command=self.resync_current_plate).pack(side=tk.RIGHT, padx=5)
 
         # Frame dates
         frame_dates = ttk.Frame(self.root, padding="5")
@@ -500,16 +872,16 @@ class PlateManagerFast:
 
         ttk.Button(frame_dates, text="Appliquer Eyespot", command=self.apply_eyespot).pack(side=tk.LEFT, padx=5)
 
-        # Frame Ã©closion
+        # Frame éclosion
         frame_hatch = ttk.Frame(self.root, padding="5")
         frame_hatch.pack(fill=tk.X)
 
-        ttk.Label(frame_hatch, text="Date Ã©closion:").pack(side=tk.LEFT, padx=5)
+        ttk.Label(frame_hatch, text="Date éclosion:").pack(side=tk.LEFT, padx=5)
         self.entry_hatching = ttk.Entry(frame_hatch, width=12)
         self.entry_hatching.pack(side=tk.LEFT, padx=5)
         self.entry_hatching.insert(0, datetime.now().strftime("%d/%m/%Y"))
 
-        self.btn_hatching = ttk.Button(frame_hatch, text="ðŸ£ Mode Ã©closion (O)", command=self.toggle_hatching_mode)
+        self.btn_hatching = ttk.Button(frame_hatch, text="🐣 Mode éclosion (O)", command=self.toggle_hatching_mode)
         self.btn_hatching.pack(side=tk.LEFT, padx=5)
 
         # Frame photo
@@ -517,13 +889,13 @@ class PlateManagerFast:
         frame_photo.pack(fill=tk.X)
 
         self.btn_photo_mode = tk.Button(
-            frame_photo, text="ðŸ“· Mode photo (P)",
+            frame_photo, text="📷 Mode photo (P)",
             command=self.toggle_photo_mode, bg="#FF9800", fg="white"
         )
         self.btn_photo_mode.pack(side=tk.LEFT, padx=5)
 
-        # Bouton appliquer photo Ã  tous
-        ttk.Button(frame_photo, text="ðŸ“· Photo â†’ Tous vivants",
+        # Bouton appliquer photo à tous
+        ttk.Button(frame_photo, text="📷 Photo → Tous vivants",
                    command=self.apply_photo_to_all_alive).pack(side=tk.LEFT, padx=5)
 
         self.label_photo_indicator = tk.Label(frame_photo, text="", font=("Arial", 10))
@@ -536,14 +908,14 @@ class PlateManagerFast:
         ttk.Label(frame_death, text="Type de mort:").pack(side=tk.LEFT, padx=5)
         self.death_type_var = tk.StringVar(value="Dead")
 
-        for dtype, emoji in [("Dead", "â˜ ï¸"), ("Dead eyed", "ðŸ‘ï¸"), ("Dead larvae", "ðŸŸ"), ("Runaway", "ðŸƒ"), ("Out of Studies", "ðŸ“¤")]:
+        for dtype, emoji in [("Dead", "☠️"), ("Dead eyed", "👁️"), ("Dead larvae", "🐟"), ("Runaway", "🏃"), ("Out of Studies", "📤")]:
             ttk.Radiobutton(
                 frame_death, text=f"{emoji} {dtype}",
                 variable=self.death_type_var, value=dtype
             ).pack(side=tk.LEFT, padx=5)
 
         # Bouton pour appliquer Out of Studies automatiquement
-        ttk.Button(frame_death, text="ðŸ“¤ Auto Out of Studies (>14j)",
+        ttk.Button(frame_death, text="📤 Auto Out of Studies (>14j)",
                    command=self.apply_out_of_studies).pack(side=tk.LEFT, padx=10)
 
         # Indicateurs
@@ -560,17 +932,17 @@ class PlateManagerFast:
         frame_grid = ttk.Frame(self.root, padding="10")
         frame_grid.pack(fill=tk.BOTH, expand=True)
 
-        # En-tÃªtes colonnes
-        for col_idx, col in enumerate(COLONNES):
+        # En-têtes colonnes
+        for col_idx, col in enumerate(COLUMNS):
             lbl = ttk.Label(frame_grid, text=str(col), font=("Arial", 10, "bold"))
             lbl.grid(row=0, column=col_idx+1, padx=5)
 
-        # En-tÃªtes lignes + boutons
-        for row_idx, row in enumerate(LIGNES):
+        # En-têtes lignes + boutons
+        for row_idx, row in enumerate(ROWS):
             lbl = ttk.Label(frame_grid, text=row, font=("Arial", 10, "bold"))
             lbl.grid(row=row_idx+1, column=0, padx=5)
 
-            for col_idx, col in enumerate(COLONNES):
+            for col_idx, col in enumerate(COLUMNS):
                 pos = f"{row}{col}"
                 btn = tk.Button(
                     frame_grid, text="",
@@ -584,22 +956,22 @@ class PlateManagerFast:
                 self.create_tooltip(btn, pos)
 
         # Configuration redimensionnement
-        for i in range(len(COLONNES) + 1):
+        for i in range(len(COLUMNS) + 1):
             frame_grid.columnconfigure(i, weight=1)
-        for i in range(len(LIGNES) + 1):
+        for i in range(len(ROWS) + 1):
             frame_grid.rowconfigure(i, weight=1)
 
         # Frame statut
         frame_status = ttk.Frame(self.root, padding="5")
         frame_status.pack(fill=tk.X)
 
-        self.label_status = tk.Label(frame_status, text="Aucune plaque chargÃ©e", font=("Arial", 11))
+        self.label_status = tk.Label(frame_status, text="Aucune plaque chargée", font=("Arial", 11))
         self.label_status.pack(side=tk.LEFT, padx=10)
 
         self.label_photo_death_warning = tk.Label(frame_status, text="", font=("Arial", 10, "bold"), fg="red")
         self.label_photo_death_warning.pack(side=tk.LEFT, padx=10)
 
-        ttk.Button(frame_status, text="ðŸ’¾ Sauvegarder", command=self.save_plate).pack(side=tk.RIGHT, padx=10)
+        ttk.Button(frame_status, text="💾 Sauvegarder", command=self.save_plate).pack(side=tk.RIGHT, padx=10)
 
         # Bindings clavier
         self.root.bind('<Left>', lambda e: self._handle_arrow('left'))
@@ -609,8 +981,13 @@ class PlateManagerFast:
         self.root.bind('o', lambda e: self.toggle_hatching_mode())
         self.root.bind('O', lambda e: self.toggle_hatching_mode())
 
+        # Keyboard shortcuts
+        self.root.bind('<Control-e>', lambda e: self.open_complete_editor())
+        self.root.bind('<Control-s>', lambda e: self.save_plate())
+        self.root.bind('<Control-r>', lambda e: self.resync_current_plate())
+
     def _handle_arrow(self, direction):
-        """GÃ¨re les touches flÃ¨ches - navigation silencieuse"""
+        """Gère les touches flèches - navigation silencieuse"""
         focused = self.root.focus_get()
         if isinstance(focused, tk.Entry):
             return
@@ -622,7 +999,7 @@ class PlateManagerFast:
 
     def load_plate(self):
         """Charge une plaque - depuis le cache si disponible"""
-        # VÃ©rification sauvegarde plaque prÃ©cÃ©dente
+        # Vérification sauvegarde plaque précédente
         if self.current_plate_number and self.cells_status:
             user_choice = self._show_save_dialog()
 
@@ -639,7 +1016,7 @@ class PlateManagerFast:
         try:
             plate_num = int(plate_str)
         except ValueError:
-            messagebox.showerror("Erreur", "NumÃ©ro de plaque invalide")
+            messagebox.showerror("Erreur", "Numéro de plaque invalide")
             return
 
         # Essayer le cache d'abord
@@ -658,8 +1035,8 @@ class PlateManagerFast:
             messagebox.showerror("Erreur", f"Plaque {plate_num} introuvable")
 
     def _load_from_cache(self, plate_num, cached_data):
-        """Charge les donnÃ©es depuis le cache"""
-        # Charger les conflits ignorÃ©s depuis la DB (persistÃ©s)
+        """Charge les données depuis le cache"""
+        # Charger les conflits ignorés depuis la DB (persistés)
         self.ignored_photo_conflicts = self.cache.get_ignored_conflicts(plate_num)
 
         self.current_plate_number = plate_num
@@ -671,8 +1048,8 @@ class PlateManagerFast:
         self.selected_dead = set()
         self.newly_marked_dead = set()
 
-        # Mettre Ã  jour l'affichage
-        self.label_fert.config(text=f"{self.current_fert_date} ({self.current_female_type}) âœ…")
+        # Mettre à jour l'affichage
+        self.label_fert.config(text=f"{self.current_fert_date} ({self.current_female_type}) ✅")
 
         # Compter eyespot
         eyespot_count = 0
@@ -684,7 +1061,7 @@ class PlateManagerFast:
             # Texte du bouton
             cross = data.get('cross', '')
             if MALE_11_15_PATTERN.search(cross):
-                btn_text = f"â­• {cross}" if len(cross) <= 12 else f"â­• {cross[:10]}..."
+                btn_text = f"⭕ {cross}" if len(cross) <= 12 else f"⭕ {cross[:10]}..."
             else:
                 btn_text = cross if len(cross) <= 15 else cross[:12] + "..."
 
@@ -696,7 +1073,7 @@ class PlateManagerFast:
                 self.selected_dead.add(pos)
 
             if data['hatching_date']:
-                indicators.append(f"ðŸ£ {data['hatching_date']}")
+                indicators.append(f"🐣 {data['hatching_date']}")
 
             if indicators:
                 btn_text = f"{btn_text}\n" + "\n".join(indicators)
@@ -716,35 +1093,35 @@ class PlateManagerFast:
         if eyespot_count > 0:
             if len(eyespot_dates) == 1:
                 self.label_eyespot_indicator.config(
-                    text=f"âœ… {eyespot_count}/24 Å“ufs - Date: {list(eyespot_dates.keys())[0]}",
+                    text=f"✅ {eyespot_count}/24 œufs - Date: {list(eyespot_dates.keys())[0]}",
                     fg="green"
                 )
             else:
                 dates_summary = ", ".join([f"{d} ({c})" for d, c in eyespot_dates.items()])
                 self.label_eyespot_indicator.config(
-                    text=f"âœ… {eyespot_count}/24 Å“ufs - Dates: {dates_summary}",
+                    text=f"✅ {eyespot_count}/24 œufs - Dates: {dates_summary}",
                     fg="green"
                 )
         else:
-            self.label_eyespot_indicator.config(text="âš ï¸ Aucune date Eyespot", fg="orange")
+            self.label_eyespot_indicator.config(text="⚠️ Aucune date Eyespot", fg="orange")
 
-        # Nettoyage des incohÃ©rences et doublons
+        # Nettoyage des incohérences et doublons
         inconsistencies_fixed = self.clean_data_inconsistencies()
         duplicates_removed = self.clean_photo_duplicates()
 
-        # Mise Ã  jour tracking photos
+        # Mise à jour tracking photos
         self.update_photo_tracking()
         self.update_status()
         self.check_photo_death_conflicts()
 
         if duplicates_removed > 0 or inconsistencies_fixed > 0:
-            # Auto-sauvegarde vers Excel en arriÃ¨re-plan (ne bloque pas l'interface)
+            # Auto-sauvegarde vers Excel en arrière-plan (ne bloque pas l'interface)
             self._save_excel_background()
         else:
             self.clear_unsaved_indicator()
 
     def _update_button_color(self, pos, data):
-        """Met Ã  jour la couleur d'un bouton"""
+        """Met à jour la couleur d'un bouton"""
         btn = self.buttons[pos]
 
         if not data['alive']:
@@ -774,25 +1151,25 @@ class PlateManagerFast:
     def get_death_emoji_and_color(self, death_type):
         """Retourne emoji et couleur selon type de mort"""
         if death_type == "Dead eyed":
-            return "ðŸ‘ï¸", COLOR_DEAD_EYED
+            return "👁️", COLOR_DEAD_EYED
         elif death_type == "Dead larvae":
-            return "ðŸŸ", COLOR_DEAD_LARVAE
+            return "🐟", COLOR_DEAD_LARVAE
         elif death_type == "Runaway":
-            return "ðŸƒ", COLOR_RUNAWAY
+            return "🏃", COLOR_RUNAWAY
         elif death_type == "Out of Studies":
-            return "ðŸ“¤", COLOR_OUT_OF_STUDIES
+            return "📤", COLOR_OUT_OF_STUDIES
         else:
-            return "â˜ ï¸", COLOR_DEAD
+            return "☠️", COLOR_DEAD
 
     def mark_unsaved(self):
-        """Marque qu'il y a des modifications non sauvegardÃ©es"""
+        """Marque qu'il y a des modifications non sauvegardées"""
         self.has_unsaved_changes = True
-        self.label_unsaved.config(text="âš ï¸ Non sauvegardÃ©", fg="red")
+        self.label_unsaved.config(text="⚠️ Non sauvegardé", fg="red")
 
     def mark_saved(self):
-        """Marque que tout est sauvegardÃ©"""
+        """Marque que tout est sauvegardé"""
         self.has_unsaved_changes = False
-        self.label_unsaved.config(text="âœ… SauvegardÃ©", fg="green")
+        self.label_unsaved.config(text="✅ Sauvegardé", fg="green")
 
     def clear_unsaved_indicator(self):
         """Efface l'indicateur de sauvegarde"""
@@ -800,8 +1177,8 @@ class PlateManagerFast:
         self.label_unsaved.config(text="")
 
     def _save_excel_background(self):
-        """Sauvegarde vers Excel en arriÃ¨re-plan (thread sÃ©parÃ©)"""
-        # Copier les donnÃ©es nÃ©cessaires pour le thread
+        """Sauvegarde vers Excel en arrière-plan (thread séparé)"""
+        # Copier les données nécessaires pour le thread
         plate_num = self.current_plate_number
         cells_data = {pos: dict(data) for pos, data in self.cells_status.items()}
         female_type = self.current_female_type
@@ -810,22 +1187,22 @@ class PlateManagerFast:
         def save_worker():
             try:
                 plate_name = f"Plaque_{plate_num:03d}.xlsx"
-                plate_path = os.path.join(DOSSIER_MODIFIEES, plate_name)
+                plate_path = os.path.join(MODIFIED_FOLDER, plate_name)
 
                 if not os.path.exists(plate_path):
-                    src_path = os.path.join(DOSSIER_PLAQUES, plate_name)
+                    src_path = os.path.join(PLATES_FOLDER, plate_name)
                     if os.path.exists(src_path):
                         shutil.copy(src_path, plate_path)
 
                 wb = openpyxl.load_workbook(plate_path)
                 ws_suivi = wb["Suivi"]
 
-                # Mettre Ã  jour TOUTES les colonnes (statut, mort, photos)
-                for row_idx, row in enumerate(LIGNES):
-                    for col_idx, col in enumerate(COLONNES):
+                # Mettre à jour TOUTES les colonnes (statut, mort, photos)
+                for row_idx, row in enumerate(ROWS):
+                    for col_idx, col in enumerate(COLUMNS):
                         pos = f"{row}{col}"
                         data = cells_data.get(pos, {})
-                        suivi_row = row_idx * len(COLONNES) + col_idx + 2
+                        suivi_row = row_idx * len(COLUMNS) + col_idx + 2
 
                         # Statut, death_date, death_type
                         is_alive = data.get('alive', True)
@@ -838,29 +1215,29 @@ class PlateManagerFast:
                         # Effacer les anciennes dates
                         for i in range(20):
                             ws_suivi.cell(suivi_row, 13 + i).value = None
-                        # Ã‰crire les nouvelles dates (sans doublons)
+                        # Écrire les nouvelles dates (sans doublons)
                         for i, photo_date in enumerate(photo_dates[:20]):
                             ws_suivi.cell(suivi_row, 13 + i).value = photo_date
 
                 wb.save(plate_path)
                 wb.close()
 
-                # Mettre Ã  jour le cache
+                # Mettre à jour le cache
                 self.cache.save_plate_to_cache(plate_num, female_type, fert_date, cells_data)
 
-                print(f"ðŸ§¹ Auto-correction doublons â†’ Excel sauvegardÃ© (Plaque {plate_num:03d})")
+                print(f"🧹 Auto-correction doublons → Excel sauvegardé (Plaque {plate_num:03d})")
 
-                # Mettre Ã  jour l'indicateur dans le thread principal
+                # Mettre à jour l'indicateur dans le thread principal
                 self.root.after(0, self.clear_unsaved_indicator)
 
             except Exception as e:
-                print(f"âš ï¸ Erreur auto-sauvegarde: {e}")
+                print(f"⚠️ Erreur auto-sauvegarde: {e}")
 
         thread = threading.Thread(target=save_worker, daemon=True)
         thread.start()
 
     def clean_data_inconsistencies(self):
-        """Nettoie les incohÃ©rences de donnÃ©es (ex: alive=True mais death_type non vide)"""
+        """Nettoie les incohérences de données (ex: alive=True mais death_type non vide)"""
         if not self.cells_status:
             return 0
 
@@ -874,7 +1251,7 @@ class PlateManagerFast:
                     fixes += 1
 
         if fixes > 0:
-            print(f"ðŸ”§ Correction: {fixes} incohÃ©rence(s) de donnÃ©es corrigÃ©e(s)")
+            print(f"🔧 Correction: {fixes} incohérence(s) de données corrigée(s)")
 
         return fixes
 
@@ -887,7 +1264,7 @@ class PlateManagerFast:
         for pos, data in self.cells_status.items():
             photo_dates = data.get('photo_dates', [])
             if photo_dates:
-                # Garder uniquement les dates uniques (en prÃ©servant l'ordre)
+                # Garder uniquement les dates uniques (en préservant l'ordre)
                 seen = set()
                 unique_dates = []
                 for date in photo_dates:
@@ -899,13 +1276,13 @@ class PlateManagerFast:
                 if removed > 0:
                     total_removed += removed
                     data['photo_dates'] = unique_dates
-                    # Recalculer la derniÃ¨re date photo
+                    # Recalculer la dernière date photo
                     if unique_dates:
                         data['last_photo_date'] = unique_dates[-1]
                     else:
                         data['last_photo_date'] = ''
 
-                    # Mettre Ã  jour le cache SQLite
+                    # Mettre à jour le cache SQLite
                     self.cache.update_cell(
                         self.current_plate_number, pos,
                         photo_dates=unique_dates,
@@ -913,12 +1290,12 @@ class PlateManagerFast:
                     )
 
         if total_removed > 0:
-            print(f"ðŸ§¹ Nettoyage: {total_removed} doublon(s) de photo supprimÃ©(s)")
+            print(f"🧹 Nettoyage: {total_removed} doublon(s) de photo supprimé(s)")
 
         return total_removed
 
     def toggle_cell(self, pos):
-        """Toggle l'Ã©tat d'une cellule"""
+        """Toggle l'état d'une cellule"""
         if pos not in self.cells_status:
             return
 
@@ -948,20 +1325,20 @@ class PlateManagerFast:
             self.selected_dead.discard(pos)
             self.newly_marked_dead.discard(pos)
 
-        # Mettre Ã  jour l'affichage
+        # Mettre à jour l'affichage
         self._refresh_button(pos)
         self.update_status()
         self.check_photo_death_conflicts()
         self.mark_unsaved()
 
     def _refresh_button(self, pos):
-        """RafraÃ®chit l'affichage d'un bouton"""
+        """Rafraîchit l'affichage d'un bouton"""
         data = self.cells_status[pos]
         btn = self.buttons[pos]
 
         cross = data.get('cross', '')
         if MALE_11_15_PATTERN.search(cross):
-            btn_text = f"â­• {cross}" if len(cross) <= 12 else f"â­• {cross[:10]}..."
+            btn_text = f"⭕ {cross}" if len(cross) <= 12 else f"⭕ {cross[:10]}..."
         else:
             btn_text = cross if len(cross) <= 15 else cross[:12] + "..."
 
@@ -971,7 +1348,7 @@ class PlateManagerFast:
             indicators.append(f"{emoji} {data['death_date']}")
 
         if data['hatching_date']:
-            indicators.append(f"ðŸ£ {data['hatching_date']}")
+            indicators.append(f"🐣 {data['hatching_date']}")
 
         if indicators:
             btn_text = f"{btn_text}\n" + "\n".join(indicators)
@@ -980,13 +1357,13 @@ class PlateManagerFast:
         self._update_button_color(pos, data)
 
     def handle_hatching_mode(self, pos):
-        """GÃ¨re le mode Ã©closion"""
+        """Gère le mode éclosion"""
         data = self.cells_status[pos]
         modified = False
 
         if data['hatching_date']:
-            if messagebox.askyesno("Annuler Ã©closion",
-                f"L'Å“uf {pos} est marquÃ© Ã©clos le {data['hatching_date']}.\nAnnuler ?"):
+            if messagebox.askyesno("Annuler éclosion",
+                f"L'œuf {pos} est marqué éclos le {data['hatching_date']}.\nAnnuler ?"):
                 data['hatching_date'] = ""
                 modified = True
         else:
@@ -1012,17 +1389,17 @@ class PlateManagerFast:
         if 'photo_dates' not in data:
             data['photo_dates'] = []
 
-        # VÃ©rifier si la date d'aujourd'hui est dÃ©jÃ  enregistrÃ©e
+        # Vérifier si la date d'aujourd'hui est déjà enregistrée
         if today_str in data['photo_dates']:
-            messagebox.showinfo("Photo dÃ©jÃ  enregistrÃ©e",
-                f"Une photo pour {pos} a dÃ©jÃ  Ã©tÃ© enregistrÃ©e aujourd'hui ({today_str}).\n"
+            messagebox.showinfo("Photo déjà enregistrée",
+                f"Une photo pour {pos} a déjà été enregistrée aujourd'hui ({today_str}).\n"
                 f"Total photos: {len(data['photo_dates'])}")
             return
 
         data['photo_dates'].append(today_str)
         data['last_photo_date'] = today_str
 
-        # Mettre Ã  jour le cache
+        # Mettre à jour le cache
         self.cache.update_cell(
             self.current_plate_number, pos,
             photo_dates=data['photo_dates'],
@@ -1031,7 +1408,7 @@ class PlateManagerFast:
 
         self.update_photo_tracking()
         self.mark_unsaved()
-        messagebox.showinfo("Photo enregistrÃ©e", f"Photo pour {pos} enregistrÃ©e : {today_str}")
+        messagebox.showinfo("Photo enregistrée", f"Photo pour {pos} enregistrée : {today_str}")
 
     def show_context_menu(self, event, pos):
         """Affiche un menu contextuel clic droit avec infos et gestion des photos"""
@@ -1043,7 +1420,7 @@ class PlateManagerFast:
 
         # Infos de l'alevin
         cross = data.get('cross', 'N/A')
-        menu.add_command(label=f"Position : {pos} â€” {cross}", state=tk.DISABLED)
+        menu.add_command(label=f"Position : {pos} — {cross}", state=tk.DISABLED)
         menu.add_separator()
 
         statut = "Vivant" if data['alive'] else "Mort"
@@ -1055,18 +1432,18 @@ class PlateManagerFast:
             menu.add_command(label=f"Type de mort : {death_type}", state=tk.DISABLED)
             menu.add_command(label=f"Date de mort : {death_date}", state=tk.DISABLED)
             menu.add_command(
-                label="âœï¸ Modifier la date de mort",
+                label="✏️ Modifier la date de mort",
                 command=lambda: self.edit_death_date(pos)
             )
 
         if data.get('hatching_date'):
-            menu.add_command(label=f"Date Ã©closion : {data['hatching_date']}", state=tk.DISABLED)
+            menu.add_command(label=f"Date éclosion : {data['hatching_date']}", state=tk.DISABLED)
 
         # Section photos
         photo_dates = data.get('photo_dates', [])
         if photo_dates:
             menu.add_separator()
-            menu.add_command(label=f"ðŸ“· Photos ({len(photo_dates)}) :", state=tk.DISABLED)
+            menu.add_command(label=f"📷 Photos ({len(photo_dates)}) :", state=tk.DISABLED)
             for i, pd in enumerate(photo_dates):
                 menu.add_command(label=f"   Photo {i+1} : {pd}", state=tk.DISABLED)
 
@@ -1081,33 +1458,33 @@ class PlateManagerFast:
                 menu.add_separator()
                 if pos in self.ignored_photo_conflicts:
                     menu.add_command(
-                        label="â„¹ï¸ Conflit photo/mort ignorÃ©",
+                        label="ℹ️ Conflit photo/mort ignoré",
                         state=tk.DISABLED, foreground="gray"
                     )
                     menu.add_command(
-                        label="ðŸ”” RÃ©tablir l'alerte",
+                        label="🔔 Rétablir l'alerte",
                         command=lambda: self.unignore_photo_conflict(pos)
                     )
                 else:
                     menu.add_command(
-                        label="âš ï¸ ALERTE : Photo le mÃªme jour que la mort !",
+                        label="⚠️ ALERTE : Photo le même jour que la mort !",
                         state=tk.DISABLED, foreground="red"
                     )
                     menu.add_command(
-                        label="âœ… Ignorer cette alerte",
+                        label="✅ Ignorer cette alerte",
                         command=lambda: self.ignore_photo_conflict(pos)
                     )
 
-            # Option supprimer la derniÃ¨re photo
+            # Option supprimer la dernière photo
             menu.add_separator()
             last_photo = photo_dates[-1]
             menu.add_command(
-                label=f"ðŸ—‘ï¸ Supprimer la derniÃ¨re photo ({last_photo})",
+                label=f"🗑️ Supprimer la dernière photo ({last_photo})",
                 command=lambda: self.delete_last_photo(pos)
             )
         else:
             menu.add_separator()
-            menu.add_command(label="ðŸ“· Aucune photo", state=tk.DISABLED)
+            menu.add_command(label="📷 Aucune photo", state=tk.DISABLED)
 
         menu.tk_popup(event.x_root, event.y_root)
 
@@ -1119,7 +1496,7 @@ class PlateManagerFast:
         self.check_photo_death_conflicts()
 
     def unignore_photo_conflict(self, pos):
-        """RÃ©tablit l'alerte photo/mort pour une cellule"""
+        """Rétablit l'alerte photo/mort pour une cellule"""
         self.ignored_photo_conflicts.discard(pos)
         # Retirer de la DB
         self.cache.remove_ignored_conflict(self.current_plate_number, pos)
@@ -1131,7 +1508,7 @@ class PlateManagerFast:
         if not data or data['alive']:
             return
 
-        # CrÃ©er la popup
+        # Créer la popup
         dialog = tk.Toplevel(self.root)
         dialog.title(f"Modifier date de mort - {pos}")
         dialog.geometry("350x180")
@@ -1170,7 +1547,7 @@ class PlateManagerFast:
         def validate_and_save():
             new_date = entry_date.get().strip()
 
-            # VÃ©rifier le format
+            # Vérifier le format
             try:
                 datetime.strptime(new_date, "%d/%m/%Y")
             except ValueError:
@@ -1180,7 +1557,7 @@ class PlateManagerFast:
             # Sauvegarder
             data['death_date'] = new_date
 
-            # Mettre Ã  jour le cache
+            # Mettre à jour le cache
             self.cache.update_cell(
                 self.current_plate_number, pos,
                 death_date=new_date
@@ -1190,15 +1567,15 @@ class PlateManagerFast:
             self.check_photo_death_conflicts()
             self.mark_unsaved()
             dialog.destroy()
-            messagebox.showinfo("SuccÃ¨s", f"Date de mort modifiÃ©e pour {pos} :\n{new_date}")
+            messagebox.showinfo("Succès", f"Date de mort modifiée pour {pos} :\n{new_date}")
 
         tk.Button(
-            button_frame, text="âœ… Valider", command=validate_and_save,
+            button_frame, text="✅ Valider", command=validate_and_save,
             bg="#4CAF50", fg="white", font=("Arial", 10, "bold"), padx=15
         ).pack(side=tk.LEFT, padx=5)
 
         tk.Button(
-            button_frame, text="âŒ Annuler", command=dialog.destroy,
+            button_frame, text="❌ Annuler", command=dialog.destroy,
             bg="#f44336", fg="white", font=("Arial", 10), padx=15
         ).pack(side=tk.LEFT, padx=5)
 
@@ -1207,7 +1584,7 @@ class PlateManagerFast:
         dialog.bind('<Escape>', lambda e: dialog.destroy())
 
     def delete_last_photo(self, pos):
-        """Supprime la derniÃ¨re date de photo d'un alevin"""
+        """Supprime la dernière date de photo d'un alevin"""
         data = self.cells_status.get(pos)
         if not data:
             return
@@ -1221,7 +1598,7 @@ class PlateManagerFast:
         # Recalculer last_photo_date
         data['last_photo_date'] = photo_dates[-1] if photo_dates else ''
 
-        # Mettre Ã  jour le cache SQLite
+        # Mettre à jour le cache SQLite
         self.cache.update_cell(
             self.current_plate_number, pos,
             photo_dates=data['photo_dates'],
@@ -1232,27 +1609,27 @@ class PlateManagerFast:
         self.update_photo_tracking()
         self.check_photo_death_conflicts()
         self.mark_unsaved()
-        messagebox.showinfo("Photo supprimÃ©e", f"Photo du {removed} supprimÃ©e pour {pos}")
+        messagebox.showinfo("Photo supprimée", f"Photo du {removed} supprimée pour {pos}")
 
     def toggle_hatching_mode(self):
-        """Active/dÃ©sactive le mode Ã©closion"""
+        """Active/désactive le mode éclosion"""
         self.hatching_mode = not self.hatching_mode
         if self.hatching_mode:
-            self.btn_hatching.config(text="ðŸ£ Mode Ã©closion ACTIF (O)")
+            self.btn_hatching.config(text="🐣 Mode éclosion ACTIF (O)")
             self.photo_mode = False
-            self.btn_photo_mode.config(text="ðŸ“· Mode photo (P)", bg="#FF9800")
+            self.btn_photo_mode.config(text="📷 Mode photo (P)", bg="#FF9800")
         else:
-            self.btn_hatching.config(text="ðŸ£ Mode Ã©closion (O)")
+            self.btn_hatching.config(text="🐣 Mode éclosion (O)")
 
     def toggle_photo_mode(self):
-        """Active/dÃ©sactive le mode photo"""
+        """Active/désactive le mode photo"""
         self.photo_mode = not self.photo_mode
         if self.photo_mode:
-            self.btn_photo_mode.config(text="ðŸ“· Mode photo ACTIF", bg="#4CAF50")
+            self.btn_photo_mode.config(text="📷 Mode photo ACTIF", bg="#4CAF50")
             self.hatching_mode = False
-            self.btn_hatching.config(text="ðŸ£ Mode Ã©closion")
+            self.btn_hatching.config(text="🐣 Mode éclosion")
         else:
-            self.btn_photo_mode.config(text="ðŸ“· Mode photo (P)", bg="#FF9800")
+            self.btn_photo_mode.config(text="📷 Mode photo (P)", bg="#FF9800")
 
     def apply_eyespot(self):
         """Applique la date eyespot aux cellules vivantes sans date"""
@@ -1271,10 +1648,10 @@ class PlateManagerFast:
 
         if count > 0:
             self.mark_unsaved()
-        messagebox.showinfo("Eyespot", f"Date appliquÃ©e Ã  {count} cellules")
+        messagebox.showinfo("Eyespot", f"Date appliquée à {count} cellules")
 
     def apply_out_of_studies(self):
-        """Applique 'Out of Studies' Ã  tous les alevins Ã©clos depuis plus de 14 jours"""
+        """Applique 'Out of Studies' à tous les alevins éclos depuis plus de 14 jours"""
         if not self.current_plate_number:
             messagebox.showwarning("Attention", "Chargez d'abord une plaque")
             return
@@ -1284,20 +1661,13 @@ class PlateManagerFast:
         count = 0
 
         for pos, data in self.cells_status.items():
-            # Seulement les alevins vivants avec une date d'Ã©closion
+            # Seulement les alevins vivants avec une date d'éclosion
             if data['alive'] and data.get('hatching_date'):
                 try:
                     hatching_dt = datetime.strptime(data['hatching_date'], "%d/%m/%Y")
                     days_since_hatching = (today - hatching_dt).days
 
                     if days_since_hatching > 14:
-                        # Enregistrer la date de photo du jour avant de marquer Out of Studies
-                        if 'photo_dates' not in data:
-                            data['photo_dates'] = []
-                        if today_str not in data['photo_dates']:
-                            data['photo_dates'].append(today_str)
-                            data['last_photo_date'] = today_str
-
                         # Marquer comme "Out of Studies"
                         data['alive'] = False
                         data['death_date'] = today_str
@@ -1313,16 +1683,15 @@ class PlateManagerFast:
             self.mark_unsaved()
             self.update_status()
             messagebox.showinfo("Out of Studies",
-                f"ðŸ“¤ {count} alevin(s) marquÃ©(s) 'Out of Studies'\n"
-                f"(Ã©clos depuis plus de 14 jours)\n\n"
-                f"ðŸ“· Photos du jour automatiquement ajoutÃ©es")
+                f"📤 {count} alevin(s) marqué(s) 'Out of Studies'\n"
+                f"(éclos depuis plus de 14 jours)\n\n")
         else:
             messagebox.showinfo("Out of Studies",
-                "Aucun alevin Ã©ligible trouvÃ©\n"
-                "(aucun alevin vivant Ã©clos depuis plus de 14 jours)")
+                "Aucun alevin éligible trouvé\n"
+                "(aucun alevin vivant éclos depuis plus de 14 jours)")
 
     def update_photo_tracking(self):
-        """Met Ã  jour le tracking visuel des photos"""
+        """Met à jour le tracking visuel des photos"""
         if not self.current_plate_number:
             self.blink_cells.clear()
             return
@@ -1356,16 +1725,16 @@ class PlateManagerFast:
 
                 if needs_photo:
                     self.blink_cells.add(pos)
-                    if not current_text.startswith('ðŸ“¸'):
-                        btn.config(text=f"ðŸ“¸ðŸ“¸ {current_text}")
-                elif current_text.startswith('ðŸ“¸ðŸ“¸ '):
+                    if not current_text.startswith('📸'):
+                        btn.config(text=f"📸📸 {current_text}")
+                elif current_text.startswith('📸📸 '):
                     btn.config(text=current_text[4:])
 
         # Indicateur
         count = len(self.blink_cells)
         if count > 0:
             self.label_photo_indicator.config(
-                text=f"ðŸ“¸ {count} alevin(s) Ã  photographier",
+                text=f"📸 {count} alevin(s) à photographier",
                 fg="red"
             )
         else:
@@ -1375,38 +1744,38 @@ class PlateManagerFast:
         self.find_next_plate_to_photograph()
 
     def find_next_plate_to_photograph(self):
-        """Trouve la prochaine plaque avec photos Ã  prendre"""
+        """Trouve la prochaine plaque avec photos à prendre"""
         if not self.current_plate_number:
             return
 
         plates = self.cache.get_plates_needing_photos()
 
-        # Chercher la prochaine aprÃ¨s la plaque actuelle
+        # Chercher la prochaine après la plaque actuelle
         for plate_num in plates:
             if plate_num > self.current_plate_number:
-                self.label_next_photo.config(text=f"ðŸ“· Prochaine: {plate_num:03d}")
+                self.label_next_photo.config(text=f"📷 Prochaine: {plate_num:03d}")
                 return
 
         self.label_next_photo.config(text="")
 
     def update_status(self):
-        """Met Ã  jour la barre de statut"""
+        """Met à jour la barre de statut"""
         if not self.current_plate_number:
-            self.label_status.config(text="Aucune plaque chargÃ©e")
+            self.label_status.config(text="Aucune plaque chargée")
             return
 
         nb_dead = len(self.selected_dead)
         nb_alive = 24 - nb_dead
         nb_new = len(self.newly_marked_dead)
 
-        text = f"Plaque {self.current_plate_number:03d} | âŒ Morts: {nb_dead} | âœ… Vivants: {nb_alive}"
+        text = f"Plaque {self.current_plate_number:03d} | ❌ Morts: {nb_dead} | ✅ Vivants: {nb_alive}"
         if nb_new > 0:
-            text += f" | ðŸ†• Nouveaux: {nb_new}"
+            text += f" | 🆕 Nouveaux: {nb_new}"
 
         self.label_status.config(text=text)
 
     def check_photo_death_conflicts(self):
-        """VÃ©rifie si des alevins morts (hors Out of Studies) ont une photo le mÃªme jour que leur mort"""
+        """Vérifie si des alevins morts (hors Out of Studies) ont une photo le même jour que leur mort"""
         if not self.current_plate_number:
             self.label_photo_death_warning.config(text="")
             return
@@ -1427,7 +1796,7 @@ class PlateManagerFast:
         if conflicts:
             positions = ", ".join(sorted(conflicts))
             self.label_photo_death_warning.config(
-                text=f"âš ï¸ Photo = jour de mort : {positions} (clic droit pour corriger)"
+                text=f"⚠️ Photo = jour de mort : {positions} (clic droit pour corriger)"
             )
         else:
             self.label_photo_death_warning.config(text="")
@@ -1449,7 +1818,7 @@ class PlateManagerFast:
             main_frame = tk.Frame(tooltip, background="#FFFFD0", relief=tk.SOLID, borderwidth=1)
             main_frame.pack(fill=tk.BOTH, expand=True)
 
-            # Type de mort (la date est dÃ©jÃ  visible)
+            # Type de mort (la date est déjà visible)
             if not data['alive']:
                 death_type = data.get('death_type', 'Dead')
                 emoji, _ = self.get_death_emoji_and_color(death_type)
@@ -1465,7 +1834,7 @@ class PlateManagerFast:
                 if photo_dates:
                     # Titre
                     tk.Label(
-                        main_frame, text=f"ðŸ“· Photos: {len(photo_dates)}",
+                        main_frame, text=f"📷 Photos: {len(photo_dates)}",
                         background="#FFFFD0", font=("Arial", 9, "bold"), padx=8, pady=2
                     ).pack(anchor='w')
 
@@ -1499,7 +1868,7 @@ class PlateManagerFast:
                         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
                         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-                        # Positionner le scroll en bas pour voir la derniÃ¨re photo
+                        # Positionner le scroll en bas pour voir la dernière photo
                         tooltip.update_idletasks()
                         canvas.yview_moveto(1.0)
                     else:
@@ -1513,7 +1882,7 @@ class PlateManagerFast:
                     has_content = True
                 else:
                     tk.Label(
-                        main_frame, text=f"ðŸ“· Aucune photo",
+                        main_frame, text=f"📷 Aucune photo",
                         background="#FFFFD0", font=("Arial", 9), padx=8, pady=2
                     ).pack(anchor='w')
                     has_content = True
@@ -1533,7 +1902,7 @@ class PlateManagerFast:
         widget.bind('<Leave>', hide)
 
     def apply_photo_to_all_alive(self):
-        """Applique la date de photo Ã  tous les alevins vivants Ã©clos"""
+        """Applique la date de photo à tous les alevins vivants éclos"""
         if not self.current_plate_number:
             messagebox.showwarning("Attention", "Chargez d'abord une plaque")
             return
@@ -1542,17 +1911,17 @@ class PlateManagerFast:
         count = 0
 
         for pos, data in self.cells_status.items():
-            # Alevin vivant ET Ã©clos
+            # Alevin vivant ET éclos
             if data['alive'] and data.get('hatching_date'):
                 if 'photo_dates' not in data:
                     data['photo_dates'] = []
 
-                # Ajouter si pas dÃ©jÃ  prÃ©sent
+                # Ajouter si pas déjà présent
                 if today_str not in data['photo_dates']:
                     data['photo_dates'].append(today_str)
                     data['last_photo_date'] = today_str
 
-                    # Mettre Ã  jour le cache
+                    # Mettre à jour le cache
                     self.cache.update_cell(
                         self.current_plate_number, pos,
                         photo_dates=data['photo_dates'],
@@ -1563,10 +1932,10 @@ class PlateManagerFast:
         self.update_photo_tracking()
         if count > 0:
             self.mark_unsaved()
-        messagebox.showinfo("Photos", f"Date photo appliquÃ©e Ã  {count} alevins vivants Ã©clos")
+        messagebox.showinfo("Photos", f"Date photo appliquée à {count} alevins vivants éclos")
 
     def plate_has_photos_needed(self, plate_num):
-        """VÃ©rifie si une plaque a des alevins nÃ©cessitant une photo"""
+        """Vérifie si une plaque a des alevins nécessitant une photo"""
         cached = self.cache.get_plate_data(plate_num)
         if not cached:
             return False
@@ -1577,7 +1946,7 @@ class PlateManagerFast:
             if not data.get('alive', True) or not data.get('hatching_date'):
                 continue
 
-            # VÃ©rifier si photo nÃ©cessaire
+            # Vérifier si photo nécessaire
             last_photo = data.get('last_photo_date', '')
             hatching = data.get('hatching_date', '')
 
@@ -1596,7 +1965,7 @@ class PlateManagerFast:
         return False
 
     def load_previous_plate_silent(self):
-        """Charge la plaque prÃ©cÃ©dente SANS boÃ®te de dialogue"""
+        """Charge la plaque précédente SANS boîte de dialogue"""
         if self.current_plate_number is None:
             return
 
@@ -1609,7 +1978,7 @@ class PlateManagerFast:
         self.load_plate_silent()
 
     def load_next_plate_silent(self):
-        """Charge la plaque suivante SANS boÃ®te de dialogue"""
+        """Charge la plaque suivante SANS boîte de dialogue"""
         if self.current_plate_number is None:
             return
 
@@ -1642,13 +2011,13 @@ class PlateManagerFast:
                     self._load_from_cache(plate_num, cached_data)
 
     def load_previous_plate(self):
-        """Charge la plaque prÃ©cÃ©dente"""
+        """Charge la plaque précédente"""
         if self.current_plate_number is None:
             messagebox.showwarning("Attention", "Chargez d'abord une plaque")
             return
 
         if self.current_plate_number <= 1:
-            messagebox.showinfo("Info", "C'est dÃ©jÃ  la premiÃ¨re plaque")
+            messagebox.showinfo("Info", "C'est déjà la première plaque")
             return
 
         self.entry_plate.delete(0, tk.END)
@@ -1666,9 +2035,9 @@ class PlateManagerFast:
         self.load_plate()
 
     def _show_save_dialog(self):
-        """Affiche dialogue de sauvegarde personnalisÃ©"""
+        """Affiche dialogue de sauvegarde personnalisé"""
         dialog = tk.Toplevel(self.root)
-        dialog.title("VÃ©rification")
+        dialog.title("Vérification")
         dialog.geometry("450x200")
         dialog.resizable(False, False)
         dialog.transient(self.root)
@@ -1685,7 +2054,7 @@ class PlateManagerFast:
         # Message
         tk.Label(
             dialog,
-            text=f"Une plaque est dÃ©jÃ  chargÃ©e ({self.current_plate}).\nQue souhaitez-vous faire ?",
+            text=f"Une plaque est déjà chargée ({self.current_plate}).\nQue souhaitez-vous faire ?",
             font=("Arial", 10), pady=20
         ).pack()
 
@@ -1705,14 +2074,14 @@ class PlateManagerFast:
             user_choice['action'] = 'cancel'
             dialog.destroy()
 
-        save_btn = tk.Button(button_frame, text="ðŸ’¾ Sauvegarder", command=on_save,
+        save_btn = tk.Button(button_frame, text="💾 Sauvegarder", command=on_save,
                   bg="#4CAF50", fg="white", font=("Arial", 10, "bold"), padx=10)
         save_btn.pack(side=tk.LEFT, padx=5)
         save_btn.focus_set()  # Focus sur le bouton sauvegarder
 
-        tk.Button(button_frame, text="ðŸ—‘ï¸ Ignorer", command=on_discard,
+        tk.Button(button_frame, text="🗑️ Ignorer", command=on_discard,
                   bg="#FF9800", fg="white", font=("Arial", 10), padx=10).pack(side=tk.LEFT, padx=5)
-        tk.Button(button_frame, text="âŒ Annuler", command=on_cancel,
+        tk.Button(button_frame, text="❌ Annuler", command=on_cancel,
                   bg="#f44336", fg="white", font=("Arial", 10), padx=10).pack(side=tk.LEFT, padx=5)
 
         # Raccourcis clavier
@@ -1731,10 +2100,10 @@ class PlateManagerFast:
 
         try:
             plate_name = f"Plaque_{self.current_plate_number:03d}.xlsx"
-            plate_path = os.path.join(DOSSIER_MODIFIEES, plate_name)
+            plate_path = os.path.join(MODIFIED_FOLDER, plate_name)
 
             if not os.path.exists(plate_path):
-                src_path = os.path.join(DOSSIER_PLAQUES, plate_name)
+                src_path = os.path.join(PLATES_FOLDER, plate_name)
                 if os.path.exists(src_path):
                     shutil.copy(src_path, plate_path)
 
@@ -1751,11 +2120,11 @@ class PlateManagerFast:
                 "out_of_studies": PatternFill(start_color="505050", end_color="505050", fill_type="solid")
             }
 
-            for row_idx, row in enumerate(LIGNES):
-                for col_idx, col in enumerate(COLONNES):
+            for row_idx, row in enumerate(ROWS):
+                for col_idx, col in enumerate(COLUMNS):
                     pos = f"{row}{col}"
                     data = self.cells_status.get(pos, {})
-                    suivi_row = row_idx * len(COLONNES) + col_idx + 2
+                    suivi_row = row_idx * len(COLUMNS) + col_idx + 2
 
                     is_alive = data.get('alive', True)
 
@@ -1789,7 +2158,7 @@ class PlateManagerFast:
             wb.save(plate_path)
             wb.close()
 
-            # Mettre Ã  jour le cache
+            # Mettre à jour le cache
             self.cache.save_plate_to_cache(
                 self.current_plate_number,
                 self.current_female_type,
@@ -1799,11 +2168,11 @@ class PlateManagerFast:
 
             self.newly_marked_dead.clear()
             self.mark_saved()
-            print(f"âœ… Sauvegarde: Plaque {self.current_plate_number:03d}")
+            print(f"✅ Sauvegarde: Plaque {self.current_plate_number:03d}")
             return True
 
         except Exception as e:
-            print(f"âš ï¸ Erreur sauvegarde: {e}")
+            print(f"⚠️ Erreur sauvegarde: {e}")
             return False
 
     def resync_current_plate(self):
@@ -1813,12 +2182,12 @@ class PlateManagerFast:
 
         if ExcelSyncer.sync_plate_to_cache(self.current_plate_number, self.cache):
             self.load_plate()
-            messagebox.showinfo("Resync", "Plaque resynchronisÃ©e depuis Excel")
+            messagebox.showinfo("Resync", "Plaque resynchronisée depuis Excel")
 
     def save_plate(self):
         """Sauvegarde la plaque avec toutes les modifications (comme LIVE)"""
         if not self.current_plate_number:
-            messagebox.showwarning("Attention", "Aucune plaque chargÃ©e")
+            messagebox.showwarning("Attention", "Aucune plaque chargée")
             return
 
         if not messagebox.askyesno("Confirmation", f"Sauvegarder les modifications de {self.current_plate} ?"):
@@ -1831,26 +2200,26 @@ class PlateManagerFast:
             types_summary = {"Dead": 0, "Dead eyed": 0, "Dead larvae": 0, "Runaway": 0, "Out of Studies": 0}
 
             for pos in self.selected_dead:
-                date = self.cells_status[pos].get('death_date', 'Non datÃ©e')
+                date = self.cells_status[pos].get('death_date', 'Non datée')
                 death_type = self.cells_status[pos].get('death_type', 'Dead')
 
                 dates_summary[date] = dates_summary.get(date, 0) + 1
                 types_summary[death_type] = types_summary.get(death_type, 0) + 1
 
-            dates_text = "\n".join([f"  â€¢ {date}: {count} Å“uf(s)" for date, count in sorted(dates_summary.items())])
-            types_text = "\n".join([f"  â€¢ {type_name}: {count}" for type_name, count in types_summary.items() if count > 0])
+            dates_text = "\n".join([f"  • {date}: {count} œuf(s)" for date, count in sorted(dates_summary.items())])
+            types_text = "\n".join([f"  • {type_name}: {count}" for type_name, count in types_summary.items() if count > 0])
 
-            save_path = os.path.join(DOSSIER_MODIFIEES, self.current_plate)
+            save_path = os.path.join(MODIFIED_FOLDER, self.current_plate)
 
-            messagebox.showinfo("SuccÃ¨s",
-                f"âœ… Plaque sauvegardÃ©e !\n\n"
-                f"ðŸ“‚ Emplacement:\n{save_path}\n\n"
-                f"ðŸ“Š Modifications:\n"
-                f"  â€¢ Total morts: {len(self.selected_dead)}\n"
-                f"  â€¢ Nouveaux morts: {len(self.newly_marked_dead)}\n"
-                f"  â€¢ Fertilisation: {self.current_fert_date}\n\n"
-                f"ðŸ“… Morts par date:\n{dates_text if dates_text else '  Aucun'}\n\n"
-                f"ðŸ”¬ Morts par type:\n{types_text if types_text else '  Aucun'}")
+            messagebox.showinfo("Succès",
+                f"✅ Plaque sauvegardée !\n\n"
+                f"📂 Emplacement:\n{save_path}\n\n"
+                f"📊 Modifications:\n"
+                f"  • Total morts: {len(self.selected_dead)}\n"
+                f"  • Nouveaux morts: {len(self.newly_marked_dead)}\n"
+                f"  • Fertilisation: {self.current_fert_date}\n\n"
+                f"📅 Morts par date:\n{dates_text if dates_text else '  Aucun'}\n\n"
+                f"🔬 Morts par type:\n{types_text if types_text else '  Aucun'}")
 
             self.newly_marked_dead.clear()
             self.update_photo_tracking()
@@ -1858,10 +2227,88 @@ class PlateManagerFast:
         else:
             messagebox.showerror("Erreur", "Erreur lors de la sauvegarde")
 
+    def _setup_menu_bar(self):
+        """Crée la barre de menu de l'application"""
+        menubar = tk.Menu(self.root)
+        self.root.config(menu=menubar)
+
+        # Menu File
+        file_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="File", menu=file_menu)
+        file_menu.add_command(
+            label="Edit Cell Data...",
+            command=self.open_complete_editor,
+            accelerator="Ctrl+E"
+        )
+        file_menu.add_separator()
+        file_menu.add_command(
+            label="Save Plate",
+            command=self.save_plate,
+            accelerator="Ctrl+S"
+        )
+        file_menu.add_separator()
+        file_menu.add_command(label="Exit", command=self.root.quit)
+
+        # Menu View
+        view_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="View", menu=view_menu)
+        view_menu.add_command(
+            label="Refresh Cache",
+            command=self.resync_current_plate,
+            accelerator="Ctrl+R"
+        )
+
+        # Menu Help
+        help_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Help", menu=help_menu)
+        help_menu.add_command(label="About", command=self.show_about)
+
+    def open_complete_editor(self):
+        """Ouvre l'éditeur complet de données de cellule"""
+        if not self.current_plate_number:
+            messagebox.showwarning("Attention", "Chargez d'abord une plaque")
+            return
+
+        # Ouvrir l'éditeur avec la première cellule par défaut
+        CompleteCellEditor(self.root, self, initial_pos="A1")
+
+    def show_about(self):
+        """Affiche la boîte de dialogue About"""
+        about_text = """CORELAC Plate Manager [FAST]
+Version 2.0 - Optimized Edition
+
+🧬 Application de gestion des plaques CORELAC
+   pour le suivi des alevins de poissons
+
+📊 Fonctionnalités:
+  • Cache SQLite pour chargement rapide
+  • Synchronisation automatique Excel ↔ SQLite
+  • Gestion des statuts (Alive/Dead/Runaway/Out of Studies)
+  • Suivi des éclosions et photos
+  • Détection des conflits photo/mort
+
+👨‍💻 Développé pour:
+   INRAE_USMB - UMR CARRTEL
+    Projet CORELAC - Étude des résistances au réchauffement chez les poissons
+
+✍️ Auteur:
+   Quentin Godeaux
+
+🛠️ Technologies:
+   Python 3.12 • Tkinter • OpenPyXL • SQLite
+
+📅 Dernière mise à jour: Mars 2026
+
+📜 Licence: GNU General Public License v3.0
+   Ce logiciel est un logiciel libre; vous pouvez le redistribuer
+   et/ou le modifier selon les termes de la Licence Publique Générale GNU.
+        """
+
+        messagebox.showinfo("À propos", about_text)
+
 
 # ============ MAIN ============
 if __name__ == "__main__":
     root = tk.Tk()
     app = PlateManagerFast(root)
     root.mainloop()
-

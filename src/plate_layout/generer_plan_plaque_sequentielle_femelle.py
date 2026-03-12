@@ -1,11 +1,9 @@
-﻿import os
+import os
 import xlsxwriter
 
 # --- CONFIGURATION ---
-# CSV source attendu (fichier matrice des croisements, extension .csv)
-input_csv = r"A_REMPLACER_PAR_CHEMIN_FICHIER"
-# Dossier de sortie où seront créés les fichiers Plaque_XXX.xlsx
-output_dir = r"A_REMPLACER_PAR_CHEMIN_DOSSIER"
+input_csv = r"C:\IE\Etudes\ET_Corégone\ET_Corélac\CORELAC_300_plaques_Aléa\12_grilles_5x5_CORELAC_LB-MATRICE.csv"
+output_dir = r"C:\IE\Etudes\ET_Corélac\CORELAC_300_plaques_24_femelles_groupées"
 os.makedirs(output_dir, exist_ok=True)
 
 # --- LECTURE DU CSV ET EXTRACTION DES CROISEMENTS PAR GROUPE ---
@@ -22,24 +20,24 @@ with open(input_csv, "r", encoding="utf-8") as f:
         # Identifier les lignes de titre de groupe (ex: B_x_B_G1)
         if line and '_G' in line and not ',' in line:
             nom_groupe = line
-            print(f"ðŸ“‹ Groupe trouvÃ© : {nom_groupe}")
+            print(f"📋 Groupe trouvé : {nom_groupe}")
             groupe_croisements = []
             i += 1
             
-            # Ligne suivante = en-tÃªte femelles (ignorer)
+            # Ligne suivante = en-tête femelles (ignorer)
             if i < len(lines):
                 i += 1
             
-            # Lignes suivantes = croisements (5 lignes de mÃ¢les Ã— 5 femelles = 25)
+            # Lignes suivantes = croisements (5 lignes de mâles × 5 femelles = 25)
             for _ in range(5):
                 if i < len(lines):
                     croi_line = lines[i].strip()
                     if croi_line and ',' in croi_line:
                         parts = croi_line.split(',')
-                        # parts[0] = mÃ¢le, parts[1:6] = croisements
+                        # parts[0] = mâle, parts[1:6] = croisements
                         for croi in parts[1:6]:
                             croi = croi.strip()
-                            if croi and 'x' in croi:  # VÃ©rifier que c'est bien un croisement
+                            if croi and 'x' in croi:  # Vérifier que c'est bien un croisement
                                 groupe_croisements.append(croi)
                     i += 1
             
@@ -49,22 +47,22 @@ with open(input_csv, "r", encoding="utf-8") as f:
         else:
             i += 1
 
-print(f"âœ… Nombre de groupes extraits : {len(groupes)}")
-print(f"âœ… Total croisements : {sum(len(g) for g in groupes)}")
+print(f"✅ Nombre de groupes extraits : {len(groupes)}")
+print(f"✅ Total croisements : {sum(len(g) for g in groupes)}")
 
 # --- ORGANISATION DES GROUPES ---
-# Groupes 0-2 : BÃ—B G1-G3
-# Groupes 3-5 : LÃ—L G1-G3
-# Groupes 6-8 : Lâ™‚Ã—Bâ™€ G1-G3 (femelles B)
-# Groupes 9-11 : Bâ™‚Ã—Lâ™€ G1-G3 (femelles L)
+# Groupes 0-2 : B×B G1-G3
+# Groupes 3-5 : L×L G1-G3
+# Groupes 6-8 : L♂×B♀ G1-G3 (femelles B)
+# Groupes 9-11 : B♂×L♀ G1-G3 (femelles L)
 
 # --- STRUCTURE DES PLAQUES ---
 nb_plaques = 200
 lignes = ['A', 'B', 'C', 'D']
 colonnes = [1, 2, 3, 4, 5, 6]
 
-# Plaques 1-100 â†’ 5Â°C
-# Plaques 101-200 â†’ 9Â°C
+# Plaques 1-100 → 5°C
+# Plaques 101-200 → 9°C
 
 # --- COULEURS ---
 color_header = '#D9D9D9'
@@ -80,41 +78,41 @@ for i in range(1, nb_plaques + 1):
         'wells': {}  # {position: croisement_code}
     }
 
-# --- RÃ‰PARTITION AVEC REGROUPEMENT PAR FEMELLE ---
+# --- RÉPARTITION AVEC REGROUPEMENT PAR FEMELLE ---
 # Nouvelle logique : pour chaque position, on groupe les croisements par femelle
-# Position 1 â†’ F1, F6, F11 avec leurs 2 types de croisements (BÃ—B + LÃ—B ou LÃ—L + BÃ—L)
+# Position 1 → F1, F6, F11 avec leurs 2 types de croisements (B×B + L×B ou L×L + B×L)
 
 plaque_5C_counter = 1
 plaque_9C_counter = 101
 
-for pos in range(25):  # 25 positions dans chaque groupe (5Ã—5)
+for pos in range(25):  # 25 positions dans chaque groupe (5×5)
     
-    # --- SÃ‰RIE 1 : Femelles B (BÃ—B + Lâ™‚Ã—Bâ™€) ---
-    # 3 femelles B Ã— 2 types de croisements = 6 colonnes
+    # --- SÉRIE 1 : Femelles B (B×B + L♂×B♀) ---
+    # 3 femelles B × 2 types de croisements = 6 colonnes
     serie1_plaques = [
-        plaque_5C_counter,      # Plaque N Ã  5Â°C
-        plaque_5C_counter + 1,  # Plaque N+1 Ã  5Â°C
-        plaque_9C_counter,      # Plaque N Ã  9Â°C
-        plaque_9C_counter + 1   # Plaque N+1 Ã  9Â°C
+        plaque_5C_counter,      # Plaque N à 5°C
+        plaque_5C_counter + 1,  # Plaque N+1 à 5°C
+        plaque_9C_counter,      # Plaque N à 9°C
+        plaque_9C_counter + 1   # Plaque N+1 à 9°C
     ]
     
     col_idx = 0
-    # Pour chaque groupe BÃ—B (groupes 0-2)
+    # Pour chaque groupe B×B (groupes 0-2)
     for g_idx in range(3):
         if g_idx < len(groupes) and pos < len(groupes[g_idx]):
-            # Croisement BÃ—B
+            # Croisement B×B
             croi_BxB = groupes[g_idx][pos]
-            # Croisement Lâ™‚Ã—Bâ™€ correspondant (groupe 6-8)
+            # Croisement L♂×B♀ correspondant (groupe 6-8)
             croi_LxB = groupes[6 + g_idx][pos] if (6 + g_idx) < len(groupes) else None
             
-            # Placer BÃ—B en colonne col_idx
+            # Placer B×B en colonne col_idx
             for plaque_num in serie1_plaques:
                 plaque_name = f"Plaque_{plaque_num:03d}"
                 for ligne in lignes:
                     position = f"{ligne}{col_idx + 1}"
                     plaques_data[plaque_name]['wells'][position] = croi_BxB
             
-            # Placer Lâ™‚Ã—Bâ™€ en colonne col_idx+1
+            # Placer L♂×B♀ en colonne col_idx+1
             if croi_LxB:
                 for plaque_num in serie1_plaques:
                     plaque_name = f"Plaque_{plaque_num:03d}"
@@ -122,37 +120,37 @@ for pos in range(25):  # 25 positions dans chaque groupe (5Ã—5)
                         position = f"{ligne}{col_idx + 2}"
                         plaques_data[plaque_name]['wells'][position] = croi_LxB
             
-            col_idx += 2  # Passer Ã  la paire de colonnes suivante
+            col_idx += 2  # Passer à la paire de colonnes suivante
     
     plaque_5C_counter += 2
     plaque_9C_counter += 2
     
-    # --- SÃ‰RIE 2 : Femelles L (LÃ—L + Bâ™‚Ã—Lâ™€) ---
-    # 3 femelles L Ã— 2 types de croisements = 6 colonnes
+    # --- SÉRIE 2 : Femelles L (L×L + B♂×L♀) ---
+    # 3 femelles L × 2 types de croisements = 6 colonnes
     serie2_plaques = [
-        plaque_5C_counter,      # Plaque N+2 Ã  5Â°C
-        plaque_5C_counter + 1,  # Plaque N+3 Ã  5Â°C
-        plaque_9C_counter,      # Plaque N+2 Ã  9Â°C
-        plaque_9C_counter + 1   # Plaque N+3 Ã  9Â°C
+        plaque_5C_counter,      # Plaque N+2 à 5°C
+        plaque_5C_counter + 1,  # Plaque N+3 à 5°C
+        plaque_9C_counter,      # Plaque N+2 à 9°C
+        plaque_9C_counter + 1   # Plaque N+3 à 9°C
     ]
     
     col_idx = 0
-    # Pour chaque groupe LÃ—L (groupes 3-5)
+    # Pour chaque groupe L×L (groupes 3-5)
     for g_idx in range(3, 6):
         if g_idx < len(groupes) and pos < len(groupes[g_idx]):
-            # Croisement LÃ—L
+            # Croisement L×L
             croi_LxL = groupes[g_idx][pos]
-            # Croisement Bâ™‚Ã—Lâ™€ correspondant (groupe 9-11)
+            # Croisement B♂×L♀ correspondant (groupe 9-11)
             croi_BxL = groupes[6 + g_idx][pos] if (6 + g_idx) < len(groupes) else None
             
-            # Placer LÃ—L en colonne col_idx
+            # Placer L×L en colonne col_idx
             for plaque_num in serie2_plaques:
                 plaque_name = f"Plaque_{plaque_num:03d}"
                 for ligne in lignes:
                     position = f"{ligne}{col_idx + 1}"
                     plaques_data[plaque_name]['wells'][position] = croi_LxL
             
-            # Placer Bâ™‚Ã—Lâ™€ en colonne col_idx+1
+            # Placer B♂×L♀ en colonne col_idx+1
             if croi_BxL:
                 for plaque_num in serie2_plaques:
                     plaque_name = f"Plaque_{plaque_num:03d}"
@@ -160,14 +158,14 @@ for pos in range(25):  # 25 positions dans chaque groupe (5Ã—5)
                         position = f"{ligne}{col_idx + 2}"
                         plaques_data[plaque_name]['wells'][position] = croi_BxL
             
-            col_idx += 2  # Passer Ã  la paire de colonnes suivante
+            col_idx += 2  # Passer à la paire de colonnes suivante
     
     plaque_5C_counter += 2
     plaque_9C_counter += 2
 
-print(f"âœ… RÃ©partition terminÃ©e sur {plaque_5C_counter - 1} plaques Ã  5Â°C et {plaque_9C_counter - 101} plaques Ã  9Â°C")
+print(f"✅ Répartition terminée sur {plaque_5C_counter - 1} plaques à 5°C et {plaque_9C_counter - 101} plaques à 9°C")
 
-# --- GÃ‰NÃ‰RATION DES FICHIERS EXCEL ---
+# --- GÉNÉRATION DES FICHIERS EXCEL ---
 for plaque_name, data in plaques_data.items():
     file_path = os.path.join(output_dir, f"{plaque_name}.xlsx")
     workbook = xlsxwriter.Workbook(file_path)
@@ -178,11 +176,11 @@ for plaque_name, data in plaques_data.items():
     fmt_header = workbook.add_format({'bg_color': color_header, 'bold': True, 'align': 'center'})
     fmt_oeuf = workbook.add_format({'bg_color': color_oeuf, 'align': 'center'})
     
-    # En-tÃªtes colonnes
+    # En-têtes colonnes
     for idx, col in enumerate(colonnes):
         ws.write(0, idx + 1, col, fmt_header)
     
-    # En-tÃªtes lignes + contenu
+    # En-têtes lignes + contenu
     for r_idx, ligne in enumerate(lignes):
         ws.write(r_idx + 1, 0, ligne, fmt_header)
         
@@ -203,7 +201,7 @@ for plaque_name, data in plaques_data.items():
         "Row", 
         "Column",
         "Cross",
-        "Temperature (Â°C)",
+        "Temperature (°C)",
         "Fertilization Date",
         "Eyespot Stage Date",
         "Hatching Date",
@@ -223,7 +221,7 @@ for plaque_name, data in plaques_data.items():
     for col_idx, header in enumerate(headers):
         suivi_ws.write(0, col_idx, header, fmt_suivi_header)
     
-    # Remplir les donnÃ©es de suivi
+    # Remplir les données de suivi
     row_idx = 1
     for ligne in lignes:
         for col in colonnes:
@@ -255,7 +253,7 @@ for plaque_name, data in plaques_data.items():
     info_ws.write(0, 1, plaque_name)
     
     info_ws.write(1, 0, "Temperature:", workbook.add_format({'bold': True}))
-    info_ws.write(1, 1, f"{data['temp']}Â°C")
+    info_ws.write(1, 1, f"{data['temp']}°C")
     
     info_ws.write(3, 0, "Crosses in this plate:", workbook.add_format({'bold': True}))
     
@@ -263,7 +261,7 @@ for plaque_name, data in plaques_data.items():
     for idx, croi in enumerate(crosses_in_plate):
         info_ws.write(4 + idx, 0, croi)
     
-    # Ajouter info sur les femelles prÃ©sentes
+    # Ajouter info sur les femelles présentes
     femelles_in_plate = set()
     for croi in crosses_in_plate:
         if 'x' in croi:
@@ -279,10 +277,10 @@ for plaque_name, data in plaques_data.items():
     
     workbook.close()
 
-print(f"âœ… GÃ©nÃ©ration terminÃ©e : {nb_plaques} plaques crÃ©Ã©es dans '{output_dir}'")
-print(f"   - Plaques 001-100 : 5Â°C")
-print(f"   - Plaques 101-200 : 9Â°C")
-print(f"   - Organisation : croisements regroupÃ©s par femelle")
-print(f"   - Exemple Plaque_001 colonnes 1-2 : B_F1 (BÃ—B + LÃ—B)")
-print(f"   - Exemple Plaque_001 colonnes 3-4 : B_F6 (BÃ—B + LÃ—B)")
-print(f"   - Exemple Plaque_001 colonnes 5-6 : B_F11 (BÃ—B + LÃ—B)")
+print(f"✅ Génération terminée : {nb_plaques} plaques créées dans '{output_dir}'")
+print(f"   - Plaques 001-100 : 5°C")
+print(f"   - Plaques 101-200 : 9°C")
+print(f"   - Organisation : croisements regroupés par femelle")
+print(f"   - Exemple Plaque_001 colonnes 1-2 : B_F1 (B×B + L×B)")
+print(f"   - Exemple Plaque_001 colonnes 3-4 : B_F6 (B×B + L×B)")
+print(f"   - Exemple Plaque_001 colonnes 5-6 : B_F11 (B×B + L×B)")

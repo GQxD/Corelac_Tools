@@ -19,10 +19,8 @@ from requests.auth import HTTPBasicAuth
 
 # ---------------- CONFIG ----------------
 NEXTCLOUD_URL = "https://nextcloud.inrae.fr"
-# Chemin du dossier Nextcloud à scanner (chemin relatif à la racine de l'utilisateur)
-FOLDER_PATH = "/A_REMPLACER_PAR_CHEMIN_DOSSIER_NEXTCLOUD"
-# Dossier local de sortie pour les PNG de QR codes + le CSV des liens
-OUTPUT_DIR = r"A_REMPLACER_PAR_CHEMIN_DOSSIER"
+FOLDER_PATH = "/carrtel-documents-collaboratifs/Corélac/TEst/plaques_modifiees"
+OUTPUT_DIR = r"C:\IE\Etudes\ET_Corélac\QR_codes"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 CSV_FILE = os.path.join(OUTPUT_DIR, "liens_onlyoffice.csv")
 PLAQUE_FILE_RE = re.compile(r"^Plaque_\d{3}\.xlsx$", re.IGNORECASE)
@@ -184,4 +182,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
