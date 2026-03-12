@@ -7,10 +7,31 @@ Python repository for CORELAC plate management, plate plan generation/verificati
 
 ## Installation
 
+### Create virtual environment
 ```bash
 python -m venv .venv
-# Windows PowerShell
+```
+
+### Activate environment
+
+**Windows PowerShell:**
+```powershell
 .\.venv\Scripts\Activate.ps1
+```
+
+**Windows CMD:**
+```cmd
+.\.venv\Scripts\activate.bat
+```
+
+**Git Bash (Windows) / Linux / Mac:**
+```bash
+source .venv/Scripts/activate  # Windows Git Bash
+source .venv/bin/activate      # Linux/Mac
+```
+
+### Install dependencies
+```bash
 pip install -r requirements.txt
 ```
 
